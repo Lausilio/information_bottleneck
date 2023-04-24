@@ -1,5 +1,7 @@
 import os
 import time
+
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
@@ -13,6 +15,7 @@ from torchsummary import summary
 from utils import load
 from dataloader import FMA2D_spec
 from architectures import SimpleCNN, ResNet
+from simplebinmi import bin_calc_information2
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -34,17 +37,25 @@ test = tracks.index[tracks['set', 'split'] == 'test']
 labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
 
+NUM_LABELS = 8
+labelixs = {}
+y = np.argmax(labels_onehot, axis=1)
+for i in range(NUM_LABELS):
+    labelixs[i] = y == i
+
+
+
 BATCH = 32
 EPOCHS = 5
 augment_prob = 0.8
 
 
 # create a training dataset and dataloader
-dataset_train = FMA2D_spec(DATA_DIR, train, transforms = False)
+dataset_train = FMA2D_spec(DATA_DIR, train, labels_onehot, transforms=False)
 dataloader = torch.utils.data.DataLoader(dataset_train, batch_size=BATCH, shuffle=True)
 
 # create a validation dataset and dataloader
-dataset_valid = FMA2D_spec(DATA_DIR, val, transforms = False)
+dataset_valid = FMA2D_spec(DATA_DIR, val, labels_onehot, transforms=False)
 val_dataloader = torch.utils.data.DataLoader(dataset_valid, batch_size=BATCH, shuffle=True)
 
 # define the loss function and the optimizer
@@ -86,6 +97,7 @@ acc_tr = []
 acc_val = []
 loss_tr = []
 loss_val = []
+mi_array = []
 
 t0 = time.time()
 
@@ -103,9 +115,11 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.unsqueeze(1)
 
         spectrogram = spectrogram.to(device)
-        output = model(spectrogram)
+        output, a1 = model(spectrogram)
 
         loss = loss_fn(output, label)
+        mi = bin_calc_information2(labelixs, a1.cpu().detach().numpy(), 0.07)
+        mi_array.append(mi)
 
         # backward pass
         optimizer.zero_grad()
@@ -171,6 +185,9 @@ plt.show()
 
 plt.plot(acc_val, label='Validation accuracy')
 plt.plot(acc_tr, label='Training accuracy')
+plt.show()
+
+plt.plot(mi_array, label='Mutual Information L1')
 plt.show()
 
 torch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')

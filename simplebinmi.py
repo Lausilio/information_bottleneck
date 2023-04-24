@@ -3,6 +3,7 @@ import numpy as np
 
 
 def get_unique_probs(x):
+    print(x.shape)# 
     uniqueids = np.ascontiguousarray(x).view(np.dtype((np.void, x.dtype.itemsize * x.shape[1])))
     _, unique_inverse, unique_counts = np.unique(uniqueids, return_index=False, return_inverse=True, return_counts=True)
     return np.asarray(unique_counts / float(sum(unique_counts))), unique_inverse

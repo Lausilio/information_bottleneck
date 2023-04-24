@@ -12,7 +12,6 @@ class SimpleCNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 8, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
         self.relu1 = nn.ReLU()
         self.bn1 = nn.BatchNorm2d(8)
-        conv_layers += [self.conv1, self.relu1, self.bn1]
 
         # Second Convolution Block
         self.conv2 = nn.Conv2d(8, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
@@ -40,11 +39,14 @@ class SimpleCNN(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        y_1 = x.copy()
+        x = self.relu1(x)
+        x = self.bn1(x)
+        a1 = x
+        x = self.conv(x)
         x = self.ap(x)
         x = x.view(x.shape[0], -1)
         x = self.lin(x)
-        return x, y_1 # y_1 output of the 1st layer
+        return x, a1
 
 
 class Res2DBlock(nn.Module):
