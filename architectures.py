@@ -9,40 +9,37 @@ class SimpleCNN(nn.Module):
         conv_layers = []
         self.name = 'SimpleCNN'
         # First Convolution Block with Relu and Batch Norm. Use Kaiming Initialization
-        self.conv1 = nn.Conv2d(1, 8, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
+        self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
         self.relu1 = nn.ReLU()
-        self.bn1 = nn.BatchNorm2d(8)
+        self.bn1 = nn.BatchNorm2d(4)
 
         # Second Convolution Block
-        self.conv2 = nn.Conv2d(8, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.relu2 = nn.ReLU()
         self.bn2 = nn.BatchNorm2d(16)
-        conv_layers += [self.conv2, self.relu2, self.bn2]
 
         # Third Convolution Block
         self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.relu3 = nn.ReLU()
         self.bn3 = nn.BatchNorm2d(32)
-        conv_layers += [self.conv3, self.relu3, self.bn3]
 
         # Fourth Convolution Block
         self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.relu4 = nn.ReLU()
         self.bn4 = nn.BatchNorm2d(64)
-        conv_layers += [self.conv4, self.relu4, self.bn4]
 
         # Linear Classifier
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
-        self.lin = nn.Linear(in_features=64, out_features=8)
-
-        self.conv = nn.Sequential(*conv_layers)
+        self.lin = nn.Linear(in_features=16, out_features=8)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.bn1(x)
-        a1 = x
-        x = self.conv(x)
+        a1 = torch.flatten(x, 2, 3)
+        x = self.conv2(x)
+        x = self.relu2(x)
+        x = self.bn2(x)
         x = self.ap(x)
         x = x.view(x.shape[0], -1)
         x = self.lin(x)

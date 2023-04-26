@@ -29,7 +29,7 @@ DATA_DIR = './data/fma_small'
 tracks = load('./data/fma_metadata/tracks.csv')
 subset = tracks.index[tracks['set', 'subset'] <= 'small']
 
-tracks = tracks.loc[subset]
+tracks = tracks.loc[subset][:1000]
 train = tracks.index[tracks['set', 'split'] == 'training']
 val = tracks.index[tracks['set', 'split'] == 'validation']
 test = tracks.index[tracks['set', 'split'] == 'test']
@@ -45,8 +45,8 @@ for i in range(NUM_LABELS):
 
 
 
-BATCH = 32
-EPOCHS = 5
+BATCH = 256
+EPOCHS = 5000
 augment_prob = 0.8
 
 
@@ -67,8 +67,8 @@ loss_fn = nn.CrossEntropyLoss()
 #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.2, patience=5)
 
 from utils import plot_spectrogram
-for spec, label in dataloader:
-    print(spec.size())
+for spec, label, ixs in dataloader:
+    print(spec.size(), ixs)
     plot_spectrogram(spec[0])
     input_size = spec.size()[2]
     break
@@ -79,13 +79,13 @@ model = SimpleCNN()
 model.to(device)
 
 
-summary(model, (1, 128, 1290))
+#summary(model, (1, 128, 1290))
 
 # Adam optimizer01
-lr = 0.001
+lr = 0.01
 optimizer = torch.optim.Adam(model.parameters())
 
-timestamp = time.strftime("feb%d_t%H%M", time.gmtime())
+timestamp = time.strftime("apr%d_t%H%M", time.gmtime())
 model_name = f"{model.name}_B{BATCH}_E{EPOCHS}_LR{lr}_pD{p_dropout}_A{augment_prob}_{timestamp}"
 
 i = 0
@@ -98,14 +98,14 @@ acc_val = []
 loss_tr = []
 loss_val = []
 mi_array = []
-
+activity = np.zeros((1000, 4, 10304))
 t0 = time.time()
 
 for epoch in range(EPOCHS):
     # evaluate the model on the training dataset
     train_correct = 0
     train_total = 0
-    for spectrogram, label in dataloader:
+    for spectrogram, label, ixs in dataloader:
         model.train()
         label = label.to(device)
         train_label = torch.argmax(label, dim=1)
@@ -116,10 +116,9 @@ for epoch in range(EPOCHS):
 
         spectrogram = spectrogram.to(device)
         output, a1 = model(spectrogram)
-
+        activity[ixs] = a1.cpu().detach().numpy()
         loss = loss_fn(output, label)
-        mi = bin_calc_information2(labelixs, a1.cpu().detach().numpy(), 0.07)
-        mi_array.append(mi)
+
 
         # backward pass
         optimizer.zero_grad()
@@ -147,14 +146,15 @@ for epoch in range(EPOCHS):
     val_total = 0
     model.eval()
     with torch.no_grad():
-        for val_spectrogram, val_label in val_dataloader:
+        for val_spectrogram, val_label, ixs in val_dataloader:
             val_label = val_label.to(device)
             val_label = torch.argmax(val_label, dim=1)
 
             val_spectrogram = val_spectrogram.squeeze(0)
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
-            val_output = model(val_spectrogram)
+            val_output, a1 = model(val_spectrogram)
+            activity[ixs] = a1.cpu().detach().numpy()
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
             val_total += val_label.size(0)
@@ -178,6 +178,12 @@ for epoch in range(EPOCHS):
         '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,
                                                                                                                 val_acc,
                                                                                                                 tr_acc))
+    mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.07)
+    mi_array.append(mi)
+
+print(mi_array)
+mi_array = np.array(mi_array)
+np.save(timestamp, mi_array)
 
 plt.plot(loss_val, label='Validation loss')
 plt.plot(loss_tr, label='Training loss')
@@ -187,7 +193,9 @@ plt.plot(acc_val, label='Validation accuracy')
 plt.plot(acc_tr, label='Training accuracy')
 plt.show()
 
-plt.plot(mi_array, label='Mutual Information L1')
+plt.scatter(mi_array[:, 0], mi_array[:, 1], label='Mutual Information L1')
+plt.xlabel('I(X,T)')
+plt.ylabel('I(Y,T)')
 plt.show()
 
 torch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')

@@ -29,7 +29,7 @@ class FMA2D_spec(Dataset):
             spec = self.spectro_augment(spec)
         # get label
         label = torch.from_numpy(self.labels_onehot.loc[tid].values).float()
-        return spec, label
+        return spec, label, index
 
     def __len__(self):
         return len(self.track_ids)
