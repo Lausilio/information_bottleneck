@@ -29,10 +29,12 @@ def bin_calc_information2(labelixs, layerdata, binsize):
     def get_h(d):
         digitized = np.floor(d / binsize).astype('int')
         p_ts, _ = get_unique_probs(digitized)
+        print(p_ts)
         return -np.sum(p_ts * np.log(p_ts))
 
     H_LAYER = get_h(layerdata)
     H_LAYER_GIVEN_OUTPUT = 0
     for label, ixs in labelixs.items():
         H_LAYER_GIVEN_OUTPUT += ixs.mean() * get_h(layerdata[ixs, :])
+        print(H_LAYER_GIVEN_OUTPUT)
     return H_LAYER, H_LAYER - H_LAYER_GIVEN_OUTPUT

@@ -44,9 +44,8 @@ for i in range(NUM_LABELS):
     labelixs[i] = y == i
 
 
-
 BATCH = 256
-EPOCHS = 5000
+EPOCHS = 100
 augment_prob = 0.8
 
 
@@ -100,7 +99,7 @@ loss_val = []
 mi_array = []
 activity = np.zeros((1000, 4, 10304))
 t0 = time.time()
-
+prev_a = 0
 for epoch in range(EPOCHS):
     # evaluate the model on the training dataset
     train_correct = 0
@@ -117,6 +116,7 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.to(device)
         output, a1 = model(spectrogram)
         activity[ixs] = a1.cpu().detach().numpy()
+
         loss = loss_fn(output, label)
 
 
@@ -178,7 +178,8 @@ for epoch in range(EPOCHS):
         '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,
                                                                                                                 val_acc,
                                                                                                                 tr_acc))
-    mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.07)
+    mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.005)
+    print(activity[:, 0, :])
     mi_array.append(mi)
 
 print(mi_array)
