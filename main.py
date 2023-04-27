@@ -114,9 +114,9 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.unsqueeze(1)
 
         spectrogram = spectrogram.to(device)
-        output, a1 = model(spectrogram)
+        output, a1, a2 = model(spectrogram)
         activity[ixs] = a1.cpu().detach().numpy()
-
+        activity2[ixs] = a2.cpu().detach().numpy()
         loss = loss_fn(output, label)
 
 
@@ -181,8 +181,34 @@ for epoch in range(EPOCHS):
     mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.005)
     print(activity[:, 0, :])
     mi_array.append(mi)
+#-----------KDE estimates
+    # Compute marginal entropies
+    h_upper = entropy_func_upper([activity[:, 0, :], ])[0]
+    h_lower = entropy_func_lower([activity[:, 0, :], ])[0]
 
-print(mi_array)
+    # Layer activity given input. This is simply the entropy of the Gaussian noise
+    hM_given_X = kde.kde_condentropy(activity[:, 0, :], noise_variance)
+
+    # Compute conditional entropies of layer activity given output
+    hM_given_Y_upper = 0.
+    hM_given_Y_lower = 0.
+    for i in range(NUM_LABELS):
+        hcond_upper = entropy_func_upper([activity[labelixs[i], :], ])[0]
+        hM_given_Y_upper += labelprobs[i] * hcond_upper
+        hcond_lower = entropy_func_lower([activity[labelixs[i], :], ])[0]
+        hM_given_Y_lower += labelprobs[i] * hcond_lower
+
+    cepochdata['MI_XM_upper'].append(nats2bits * (h_upper - hM_given_X))
+    cepochdata['MI_YM_upper'].append(nats2bits * (h_upper - hM_given_Y_upper))
+    cepochdata['H_M_upper'].append(nats2bits * h_upper)
+
+    pstr = 'upper: MI(X;M)=%0.3f, MI(Y;M)=%0.3f' % (cepochdata['MI_XM_upper'][-1], cepochdata['MI_YM_upper'][-1])
+    cepochdata['MI_XM_lower'].append(nats2bits * (h_lower - hM_given_X))
+    cepochdata['MI_YM_lower'].append(nats2bits * (h_lower - hM_given_Y_lower))
+    cepochdata['H_M_lower'].append(nats2bits * h_lower)
+    pstr += ' | lower: MI(X;M)=%0.3f, MI(Y;M)=%0.3f' % (cepochdata['MI_XM_lower'][-1], cepochdata['MI_YM_lower'][-1])
+#----------------------
+#print(mi_array)
 mi_array = np.array(mi_array)
 np.save(timestamp, mi_array)
 
