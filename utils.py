@@ -228,7 +228,7 @@ def get_audio_path(audio_dir, track_id):
     --------
     >>> import utils
     >>> AUDIO_DIR = os.environ.get('AUDIO_DIR')
-    >>> utils.get_audio_path(AUDIO_DIR, 2)
+    >>> utils.get_audio_path(AUDIO_DIR, 2)jupyte
     '../data/fma_small/000/000002.mp3'
     """
     tid_str = '{:06d}'.format(track_id)

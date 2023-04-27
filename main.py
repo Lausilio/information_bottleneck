@@ -16,6 +16,8 @@ from utils import load
 from dataloader import FMA2D_spec
 from architectures import SimpleCNN, ResNet
 from simplebinmi import bin_calc_information2
+import kde
+import keras.backend as K
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,6 +44,8 @@ labelixs = {}
 y = np.argmax(labels_onehot, axis=1)
 for i in range(NUM_LABELS):
     labelixs[i] = y == i
+
+labelprobs = np.mean(y, axis=0)
 
 
 BATCH = 256
@@ -79,6 +83,19 @@ model.to(device)
 
 
 #summary(model, (1, 128, 1290))
+
+#------------KDE functions
+# nats to bits conversion factor
+nats2bits = 1.0/np.log(2)
+#upper/lower entropy estimates
+noise_variance = 1e-3  # Added Gaussian noise variance
+binsize = 0.07  # size of bins for binning method
+
+# Functions to return upper and lower bounds on entropy of layer activity
+Klayer_activity = K.placeholder(ndim=2)  # Keras placeholder
+entropy_func_upper = torch.function([Klayer_activity,], [kde.entropy_estimator_kl(Klayer_activity, noise_variance),])
+entropy_func_lower = torch.function([Klayer_activity,], [kde.entropy_estimator_bd(Klayer_activity, noise_variance),])
+#------------------------
 
 # Adam optimizer01
 lr = 0.01
@@ -118,7 +135,7 @@ for epoch in range(EPOCHS):
         activity[ixs] = a1.cpu().detach().numpy()
         activity2[ixs] = a2.cpu().detach().numpy()
         loss = loss_fn(output, label)
-
+        cepochdata = defaultdict(list)
 
         # backward pass
         optimizer.zero_grad()
