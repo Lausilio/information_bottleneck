@@ -35,15 +35,16 @@ class SimpleCNN(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu1(x)
-        x = self.bn1(x)
         a1 = torch.flatten(x, 2, 3)
+        x = self.bn1(x)
         x = self.conv2(x)
         x = self.relu2(x)
+        a2 = torch.flatten(x, 2, 3)
         x = self.bn2(x)
         x = self.ap(x)
         x = x.view(x.shape[0], -1)
         x = self.lin(x)
-        return x, a1
+        return x, a1, a2
 
 
 class Res2DBlock(nn.Module):
