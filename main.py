@@ -41,14 +41,15 @@ test = tracks.index[tracks['set', 'split'] == 'test']
 
 labels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])
 labels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)
+labels_onehot_np = np.array(labels_onehot)
 
 NUM_LABELS = 8
 labelixs = {}
-y = np.argmax(labels_onehot, axis=1)
+y = np.argmax(labels_onehot_np, axis=1)
 for i in range(NUM_LABELS):
     labelixs[i] = y == i
 
-labelprobs = np.mean(labels_onehot, axis=0)
+labelprobs = np.mean(y, axis=0)
 
 BATCH = 256
 EPOCHS = 100
@@ -72,8 +73,8 @@ loss_fn = nn.CrossEntropyLoss()
 
 from utils import plot_spectrogram
 for spec, label, ixs in dataloader:
-    print(spec.size(), ixs)
-    plot_spectrogram(spec[0])
+    #print(spec.size(), ixs)
+    #plot_spectrogram(spec[0])
     input_size = spec.size()[2]
     break
 
@@ -119,7 +120,11 @@ acc_val = []
 loss_tr = []
 loss_val = []
 mi_array = []
+mi2_array = []
+mi3_array = []
+mi4_array = []
 activity = np.zeros((1000, 4, 10304))
+activity2 = np.zeros((1000, 16, 2576))
 t0 = time.time()
 prev_a = 0
 for epoch in range(EPOCHS):
@@ -138,8 +143,10 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.to(device)
         output, a1, a2 = model(spectrogram)
         activity[ixs] = a1.cpu().detach().numpy()
-        #activity2[ixs] = a2.cpu().detach().numpy()
+        activity2[ixs] = a2.cpu().detach().numpy()
+
         loss = loss_fn(output, label)
+
         cepochdata = defaultdict(list)
 
         # backward pass
@@ -177,6 +184,7 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.to(device)
             val_output, a1, a2 = model(val_spectrogram)
             activity[ixs] = a1.cpu().detach().numpy()
+            activity2[ixs] = a2.cpu().detach().numpy()
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
             val_total += val_label.size(0)
@@ -215,9 +223,9 @@ for epoch in range(EPOCHS):
     hM_given_Y_upper = 0.
     hM_given_Y_lower = 0.
     for i in range(NUM_LABELS):
-        hcond_upper = entropy_func_upper([activity[labelixs[i], :], ])#[0]
+        hcond_upper = entropy_func_upper([activity[labelixs[i], :], ])[0]
         hM_given_Y_upper += labelprobs[i] * hcond_upper
-        hcond_lower = entropy_func_lower([activity[labelixs[i], :], ])#[0]
+        hcond_lower = entropy_func_lower([activity[labelixs[i], :], ])[0]
         hM_given_Y_lower += labelprobs[i] * hcond_lower
 
     cepochdata['MI_XM_upper'].append(nats2bits * (h_upper - hM_given_X))

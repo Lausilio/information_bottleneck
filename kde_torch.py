@@ -10,7 +10,7 @@ from scipy.special import logsumexp
 
 def Kget_dists(X):
     """Keras code to compute the pairwise distance matrix for a set of
-    vectors specifie by the matrix X.
+    vectors specific by the matrix X.
     """
     # x2 = K.expand_dims(K.sum(K.square(X), axis=1), 1)
     # dists = x2 + K.transpose(x2) - 2*K.dot(X, K.transpose(X))
