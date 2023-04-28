@@ -18,7 +18,8 @@ from dataloader import FMA2D_spec
 from architectures import SimpleCNN, ResNet
 from simplebinmi import bin_calc_information2
 
-import kde
+#import kde
+import kde_torch as kde
 #import keras.backend as K
 
 
@@ -47,7 +48,7 @@ y = np.argmax(labels_onehot, axis=1)
 for i in range(NUM_LABELS):
     labelixs[i] = y == i
 
-labelprobs = np.mean(y, axis=0)
+labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
 EPOCHS = 100
@@ -137,7 +138,7 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.to(device)
         output, a1, a2 = model(spectrogram)
         activity[ixs] = a1.cpu().detach().numpy()
-        activity2[ixs] = a2.cpu().detach().numpy()
+        #activity2[ixs] = a2.cpu().detach().numpy()
         loss = loss_fn(output, label)
         cepochdata = defaultdict(list)
 
@@ -174,7 +175,7 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.squeeze(0)
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
-            val_output, a1 = model(val_spectrogram)
+            val_output, a1, a2 = model(val_spectrogram)
             activity[ixs] = a1.cpu().detach().numpy()
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
@@ -199,13 +200,13 @@ for epoch in range(EPOCHS):
         '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,
                                                                                                                 val_acc,
                                                                                                                 tr_acc))
-    mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.005)
-    print(activity[:, 0, :])
-    mi_array.append(mi)
+    #mi = bin_calc_information2(labelixs, activity[:, 0, :], 0.005)
+    #print(activity[:, 0, :])
+    #mi_array.append(mi)
 #-----------KDE estimates
     # Compute marginal entropies
-    h_upper = entropy_func_upper([activity[:, 0, :], ])[0]
-    h_lower = entropy_func_lower([activity[:, 0, :], ])[0]
+    h_upper = entropy_func_upper([activity[:, 0, :], ])#[0]
+    h_lower = entropy_func_lower([activity[:, 0, :], ])#[0]
 
     # Layer activity given input. This is simply the entropy of the Gaussian noise
     hM_given_X = kde.kde_condentropy(activity[:, 0, :], noise_variance)
@@ -214,9 +215,9 @@ for epoch in range(EPOCHS):
     hM_given_Y_upper = 0.
     hM_given_Y_lower = 0.
     for i in range(NUM_LABELS):
-        hcond_upper = entropy_func_upper([activity[labelixs[i], :], ])[0]
+        hcond_upper = entropy_func_upper([activity[labelixs[i], :], ])#[0]
         hM_given_Y_upper += labelprobs[i] * hcond_upper
-        hcond_lower = entropy_func_lower([activity[labelixs[i], :], ])[0]
+        hcond_lower = entropy_func_lower([activity[labelixs[i], :], ])#[0]
         hM_given_Y_lower += labelprobs[i] * hcond_lower
 
     cepochdata['MI_XM_upper'].append(nats2bits * (h_upper - hM_given_X))
@@ -236,8 +237,8 @@ plt.ylabel('I(Y,T)')
 plt.show()
 #----------------------
 #print(mi_array)
-mi_array = np.array(mi_array)
-np.save(timestamp, mi_array)
+#mi_array = np.array(mi_array)
+#np.save(timestamp, mi_array)
 
 plt.plot(loss_val, label='Validation loss')
 plt.plot(loss_tr, label='Training loss')
@@ -247,10 +248,10 @@ plt.plot(acc_val, label='Validation accuracy')
 plt.plot(acc_tr, label='Training accuracy')
 plt.show()
 
-plt.scatter(mi_array[:, 0], mi_array[:, 1], label='Mutual Information L1')
-plt.xlabel('I(X,T)')
-plt.ylabel('I(Y,T)')
-plt.show()
+#plt.scatter(mi_array[:, 0], mi_array[:, 1], label='Mutual Information L1')
+#plt.xlabel('I(X,T)')
+#plt.ylabel('I(Y,T)')
+#plt.show()
 
 torch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')
 print('Finished Training')

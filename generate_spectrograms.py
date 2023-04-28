@@ -2,6 +2,8 @@ import os
 import torch
 import torchaudio
 from utils import stereo_to_mono
+#import soundfile as sf
+#print(sf.available_formats())
 
 data_dir = './data/fma_small'
 output_dir = './data/spectrograms'
@@ -31,9 +33,10 @@ for root, dirs, files in os.walk(data_dir):
     for filename in files:
         if filename.endswith('.mp3'):
             try:
-                filepath = os.path.join(root, filename)
+                filepath = os.path.join(root, filename)#.replace("\\","/")
 
-                sig, sr = torchaudio.load(filepath)
+
+                sig, sr = torchaudio.load(filepath, format='mp3')
 
                 sig = stereo_to_mono(sig)
 
@@ -66,6 +69,7 @@ for root, dirs, files in os.walk(data_dir):
                 else:
                     # resize to a fixed length
                     sig_len = sig.shape[0]
+                    print(sig_len)
                     max_len = sampling_rate // 1000 * max_ms
                     if sig_len > max_len:
                         sig = sig[:max_len]
