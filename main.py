@@ -19,7 +19,7 @@ from architectures import SimpleCNN, ResNet
 from simplebinmi import bin_calc_information2
 
 import kde
-import keras.backend as K
+#import keras.backend as K
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
