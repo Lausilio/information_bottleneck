@@ -16,6 +16,7 @@ from utils import load
 from dataloader import FMA2D_spec
 from architectures import SimpleCNN, ResNet
 from simplebinmi import bin_calc_information2
+
 import kde
 import keras.backend as K
 
@@ -47,11 +48,9 @@ for i in range(NUM_LABELS):
 
 labelprobs = np.mean(y, axis=0)
 
-
 BATCH = 256
 EPOCHS = 100
 augment_prob = 0.8
-
 
 # create a training dataset and dataloader
 dataset_train = FMA2D_spec(DATA_DIR, train, labels_onehot, transforms=False)
@@ -218,12 +217,18 @@ for epoch in range(EPOCHS):
     cepochdata['MI_XM_upper'].append(nats2bits * (h_upper - hM_given_X))
     cepochdata['MI_YM_upper'].append(nats2bits * (h_upper - hM_given_Y_upper))
     cepochdata['H_M_upper'].append(nats2bits * h_upper)
+    pstr += 'upper: MI(X;M)=%0.3f, MI(Y;M)=%0.3f' % (cepochdata['MI_XM_upper'][-1], cepochdata['MI_YM_upper'][-1])
 
-    pstr = 'upper: MI(X;M)=%0.3f, MI(Y;M)=%0.3f' % (cepochdata['MI_XM_upper'][-1], cepochdata['MI_YM_upper'][-1])
     cepochdata['MI_XM_lower'].append(nats2bits * (h_lower - hM_given_X))
     cepochdata['MI_YM_lower'].append(nats2bits * (h_lower - hM_given_Y_lower))
     cepochdata['H_M_lower'].append(nats2bits * h_lower)
     pstr += ' | lower: MI(X;M)=%0.3f, MI(Y;M)=%0.3f' % (cepochdata['MI_XM_lower'][-1], cepochdata['MI_YM_lower'][-1])
+#----------------------visualisation
+mi_array_kde = np.array(cepochdata)
+plt.scatter(mi_array_kde[:, 0], mi_array_kde[:, 1], label='Mutual Information L1')
+plt.xlabel('I(X,T)')
+plt.ylabel('I(Y,T)')
+plt.show()
 #----------------------
 #print(mi_array)
 mi_array = np.array(mi_array)
