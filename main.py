@@ -1,5 +1,6 @@
 import os
 import time
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -91,9 +92,13 @@ noise_variance = 1e-3  # Added Gaussian noise variance
 binsize = 0.07  # size of bins for binning method
 
 # Functions to return upper and lower bounds on entropy of layer activity
-Klayer_activity = K.placeholder(ndim=2)  # Keras placeholder
-entropy_func_upper = torch.function([Klayer_activity,], [kde.entropy_estimator_kl(Klayer_activity, noise_variance),])
-entropy_func_lower = torch.function([Klayer_activity,], [kde.entropy_estimator_bd(Klayer_activity, noise_variance),])
+#Klayer_activity = K.placeholder(ndim=2)  # Keras placeholder
+#entropy_func_upper = torch.function([Klayer_activity,], [kde.entropy_estimator_kl(Klayer_activity, noise_variance),])
+#entropy_func_lower = torch.function([Klayer_activity,], [kde.entropy_estimator_bd(Klayer_activity, noise_variance),])
+def entropy_func_upper(activity):
+    return kde.entropy_estimator_kl(activity, noise_variance)
+def entropy_func_lower(activity):
+    return kde.entropy_estimator_bd(activity, noise_variance)
 #------------------------
 
 # Adam optimizer01
