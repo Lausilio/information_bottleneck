@@ -260,12 +260,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a1_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a1_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a1_u.append(nats2bits * h_upper)
+    h_array_a1_u.append(nats2bits * h_upper/10304)
 
     #lower
     mix_array_a1_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a1_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a1_l.append(nats2bits * h_lower)
+    h_array_a1_l.append(nats2bits * h_lower/10304)
 
     #------KDE estimates 2
     # Compute marginal entropies
@@ -286,12 +286,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a2_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a2_u.append(nats2bits * h_upper)
+    h_array_a2_u.append(nats2bits * h_upper/2576)
 
     #lower
     mix_array_a2_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a2_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a2_l.append(nats2bits * h_lower)
+    h_array_a2_l.append(nats2bits * h_lower/2576)
 
     #------KDE estimates 3
     # Compute marginal entropies
@@ -312,12 +312,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a3_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a3_u.append(nats2bits * h_upper)
+    h_array_a3_u.append(nats2bits * /648)
 
     #lower
     mix_array_a3_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a3_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a3_l.append(nats2bits * h_lower)
+    h_array_a3_l.append(nats2bits * h_lower/648)
 
     #------KDE estimates 4
     # Compute marginal entropies
@@ -338,12 +338,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a4_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a4_u.append(nats2bits * h_upper)
+    h_array_a4_u.append(nats2bits * h_upper/164)
 
     #lower
     mix_array_a4_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a4_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a4_l.append(nats2bits * h_lower)
+    h_array_a4_l.append(nats2bits * h_lower/164)
 
 mix_array_a1_u = np.array(mix_array_a1_u)
 miy_array_a1_u = np.array(miy_array_a1_u)
@@ -366,12 +366,12 @@ mix_array_a2_l = np.array(mix_array_a2_l)
 miy_array_a2_l = np.array(miy_array_a2_l)
 h_array_a2_l = np.array(h_array_a2_l)
 
-np.save(timestamp + '_MIux_a1', mix_array_a2_u)
-np.save(timestamp + '_MIuy_a1', miy_array_a2_u)
-np.save(timestamp + '_MIuh_a1', h_array_a2_u)
-np.save(timestamp + '_MIlx_a1', mix_array_a2_l)
-np.save(timestamp + '_MIly_a1', miy_array_a2_l)
-np.save(timestamp + '_MIlh_a1', h_array_a2_l)
+np.save(timestamp + '_MIux_a2', mix_array_a2_u)
+np.save(timestamp + '_MIuy_a2', miy_array_a2_u)
+np.save(timestamp + '_MIuh_a2', h_array_a2_u)
+np.save(timestamp + '_MIlx_a2', mix_array_a2_l)
+np.save(timestamp + '_MIly_a2', miy_array_a2_l)
+np.save(timestamp + '_MIlh_a2', h_array_a2_l)
 
 mix_array_a3_u = np.array(mix_array_a3_u)
 miy_array_a3_u = np.array(miy_array_a3_u)
@@ -380,12 +380,12 @@ mix_array_a3_l = np.array(mix_array_a3_l)
 miy_array_a3_l = np.array(miy_array_a3_l)
 h_array_a3_l = np.array(h_array_a3_l)
 
-np.save(timestamp + '_MIux_a1', mix_array_a3_u)
-np.save(timestamp + '_MIuy_a1', miy_array_a3_u)
-np.save(timestamp + '_MIuh_a1', h_array_a3_u)
-np.save(timestamp + '_MIlx_a1', mix_array_a3_l)
-np.save(timestamp + '_MIly_a1', miy_array_a3_l)
-np.save(timestamp + '_MIlh_a1', h_array_a3_l)
+np.save(timestamp + '_MIux_a3', mix_array_a3_u)
+np.save(timestamp + '_MIuy_a3', miy_array_a3_u)
+np.save(timestamp + '_MIuh_a3', h_array_a3_u)
+np.save(timestamp + '_MIlx_a3', mix_array_a3_l)
+np.save(timestamp + '_MIly_a3', miy_array_a3_l)
+np.save(timestamp + '_MIlh_a3', h_array_a3_l)
 
 mix_array_a4_u = np.array(mix_array_a4_u)
 miy_array_a4_u = np.array(miy_array_a4_u)
@@ -394,12 +394,12 @@ mix_array_a4_l = np.array(mix_array_a4_l)
 miy_array_a4_l = np.array(miy_array_a4_l)
 h_array_a4_l = np.array(h_array_a4_l)
 
-np.save(timestamp + '_MIux_a1', mix_array_a4_u)
-np.save(timestamp + '_MIuy_a1', miy_array_a4_u)
-np.save(timestamp + '_MIuh_a1', h_array_a4_u)
-np.save(timestamp + '_MIlx_a1', mix_array_a4_l)
-np.save(timestamp + '_MIly_a1', miy_array_a4_l)
-np.save(timestamp + '_MIlh_a1', h_array_a4_l)
+np.save(timestamp + '_MIux_a4', mix_array_a4_u)
+np.save(timestamp + '_MIuy_a4', miy_array_a4_u)
+np.save(timestamp + '_MIuh_a4', h_array_a4_u)
+np.save(timestamp + '_MIlx_a4', mix_array_a4_l)
+np.save(timestamp + '_MIly_a4', miy_array_a4_l)
+np.save(timestamp + '_MIlh_a4', h_array_a4_l)
 
 #plot LOSS & ACCURACY
 
