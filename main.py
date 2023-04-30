@@ -48,10 +48,10 @@ y = np.argmax(labels_onehot.to_numpy(), axis=1)
 for i in range(NUM_LABELS):
     labelixs[i] = y == i
 
-labelprobs = np.mean(y, axis=0)
+labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 100
+EPOCHS = 5
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -86,7 +86,7 @@ for spec, label, ixs in dataloader:
 p_dropout = 0.3
 #model = ResNet(FN=64, p_dropout=p_dropout)
 #added a condition to allow to specify ReLU or tanh
-model = SimpleCNN(activation = "tanh")
+model = SimpleCNN(activation="relu")
 #model = SimpleCNN()
 model.to(device)
 
@@ -223,18 +223,20 @@ for epoch in range(EPOCHS):
                                                                                                                 tr_acc))
     #------KDE estimates
     # Compute marginal entropies
-    h_upper = entropy_func_upper([activity, ])
-    h_lower = entropy_func_lower([activity, ])
+    print(activity2.shape)
+    FN = 0
+    h_upper = entropy_func_upper([activity2[:, FN, :], ])
+    h_lower = entropy_func_lower([activity2[:, FN, :], ])
     # Layer activity given input. This is simply the entropy of the Gaussian noise
-    hM_given_X = kde.kde_condentropy(activity, noise_variance)
+    hM_given_X = kde.kde_condentropy(activity2[:, FN, :], noise_variance)
 
     # Compute conditional entropies of layer activity given output
     hM_given_Y_upper = 0.
     hM_given_Y_lower = 0.
     for i in range(NUM_LABELS):
-        hcond_upper = entropy_func_upper([activity[labelixs[i], :, :], ])[0]
+        hcond_upper = entropy_func_upper([activity[labelixs[i], FN, :], ])
         hM_given_Y_upper += labelprobs[i] * hcond_upper
-        hcond_lower = entropy_func_lower([activity[:, labelixs[i], :, :], ])[0]
+        hcond_lower = entropy_func_lower([activity[labelixs[i], FN, :], ])
         hM_given_Y_lower += labelprobs[i] * hcond_lower
 
 
