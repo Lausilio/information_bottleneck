@@ -51,7 +51,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 10
+EPOCHS = 5
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -421,24 +421,27 @@ plt.ylabel('Accuracy')
 plt.legend()
 plt.grid()
 plt.title('Accuracy vs Epochs')
-
 plt.show()
 
+plt.savefig('loss_acc.pdf')
+#----------------------------------------------------------
 #plot scatter UPPER
-epochs = EPOCHS
-plt.plot(mix_array_a1_u[:], miy_array_a1_u[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a1_u[:], miy_array_a1_u[:], c=epochs, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
-plt.plot(mix_array_a2_u[:], miy_array_a2_u[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a2_u[:], miy_array_a2_u[:], c=epochs, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
-plt.plot(mix_array_a3_u[:], miy_array_a3_u[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=epochs, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
-plt.plot(mix_array_a4_u[:], miy_array_a4_u[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=epochs, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+epochs = list(range(EPOCHS))
+t = np.arange(len(mix_array_a1_u[:]))
+plt.plot(mix_array_a1_u[:], miy_array_a1_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a1_u[:], miy_array_a1_u[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
+plt.plot(mix_array_a2_u[:], miy_array_a2_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a2_u[:], miy_array_a2_u[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
+plt.plot(mix_array_a3_u[:], miy_array_a3_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.plot(mix_array_a4_u[:], miy_array_a4_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
 plt.legend()
 plt.colorbar()
+plt.savefig('mi_xy_u.pdf')
 plt.show()
 
 #plot MI bar UPPER
@@ -451,26 +454,27 @@ plt.xlabel('Epochs')
 plt.ylabel('Entropy(T)')
 plt.grid()
 plt.legend()
+plt.savefig('h_u_epo.pdf')
 plt.show()
 
 #plot scatter LOWER
-epochs = EPOCHS
-plt.plot(mix_array_a1_l[:], miy_array_a1_l[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a1_l[:], miy_array_a1_l[:], c=epochs, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
-plt.plot(mix_array_a2_l[:], miy_array_a2_l[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a2_l[:], miy_array_a2_l[:], c=epochs, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
-plt.plot(mix_array_a3_l[:], miy_array_a3_l[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=epochs, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
-plt.plot(mix_array_a4_l[:], miy_array_a4_l[:], c=c, alpha=0.1, zorder=1)
-plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=epochs, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+plt.plot(mix_array_a1_l[:], miy_array_a1_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a1_l[:], miy_array_a1_l[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
+plt.plot(mix_array_a2_l[:], miy_array_a2_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a2_l[:], miy_array_a2_l[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
+plt.plot(mix_array_a3_l[:], miy_array_a3_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.plot(mix_array_a4_l[:], miy_array_a4_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
 plt.legend()
 plt.colorbar()
+plt.savefig('mi_xy_l.pdf')
 plt.show()
 
-#plot MI bar LOWER
+#plot h bar LOWER
 plt.plot(epochs, h_array_a1_l, label='Entropy L1')
 plt.plot(epochs, h_array_a2_l, label='Entropy L2')
 plt.plot(epochs, h_array_a3_l, label='Entropy L3')
@@ -480,15 +484,46 @@ plt.xlabel('Epochs')
 plt.ylabel('Entropy(T)')
 plt.grid()
 plt.legend()
+plt.savefig('h_l_epo.pdf')
 plt.show()
-
-#plot double lines MI upper
-plt.plot(epochs, h_array_a1_l, label='Entropy L1')
-plt.plot(epochs, h_array_a2_l, label='Entropy L2')
+#-------------------------------------------------------------------
+#plot u/l MI vs epochs
+plt.plot(epochs, mix_array_a1_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a1_l, label='Lower Entropy')
 plt.xlabel('Epochs')
-plt.ylabel('Entropy(T)')
+plt.ylabel('I(X,T)')
+plt.title('Layer 1 Mutual Info (KDE)')
 plt.grid()
 plt.legend()
+plt.savefig('mi_1_ul_epo.pdf')
 plt.show()
 
+plt.plot(epochs, mix_array_a2_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a2_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 2 Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_2_ul_epo.pdf')
+plt.show()
 
+plt.plot(epochs, mix_array_a3_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a3_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 3 Upper Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_3_ul_epo.pdf')
+plt.show()
+
+plt.plot(epochs, mix_array_a4_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a4_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 4 Upper Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_4_ul_epo.pdf')
+plt.show()
