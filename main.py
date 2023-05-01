@@ -50,7 +50,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 10
+EPOCHS = 100
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -217,6 +217,10 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
             val_output, a1, a2, a3, a4 = model(val_spectrogram)
+            activity1[ixs] = a1.cpu().detach().numpy()
+            activity2[ixs] = a2.cpu().detach().numpy()
+            activity3[ixs] = a3.cpu().detach().numpy()
+            activity4[ixs] = a4.cpu().detach().numpy()
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
             val_total += val_label.size(0)
