@@ -10,12 +10,12 @@ class SimpleCNN(nn.Module):
         self.name = 'SimpleCNN'
         # First Convolution Block with Relu and Batch Norm. Use Kaiming Initialization
         self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
-        self.relu1 = nn.ReLU()
+        self.relu1 = nn.Tanh()
         self.bn1 = nn.BatchNorm2d(4)
 
         # Second Convolution Block
         self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.relu2 = nn.ReLU()
+        self.relu2 = nn.Tanh()
         self.bn2 = nn.BatchNorm2d(16)
 
         # Third Convolution Block
@@ -199,7 +199,7 @@ class SimpleCNN2(nn.Module):
     def __init__(self, activation='ReLU'):
         super().__init__()
         self.name = 'SimpleCNN'
-        assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"
+        assert activation in ['ReLU', 'Tanh'], "Activation must be either 'ReLU' or 'tanh'"
         
         # Choose the activation function
         if activation == 'ReLU':
