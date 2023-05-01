@@ -15,8 +15,8 @@ from torchsummary import summary
 
 from utils import load
 from dataloader import FMA2D_spec
-from architectures import SimpleCNN, ResNet
-#from architectures import SimpleCNN2, ResNet
+from architectures import SimpleCNN, ResNet, SimpleCNN2
+from architectures import SimpleCNN2, ResNet
 from simplebinmi import bin_calc_information2
 
 #import kde
@@ -83,10 +83,11 @@ for spec, label, ixs in dataloader:
     break
 
 #plot MI I(X,T) for conv blocks
+
 p_dropout = 0.3
 #model = ResNet(FN=64, p_dropout=p_dropout)
 #added a condition to allow to specify ReLU or tanh
-model = SimpleCNN(activation="relu")
+model = SimpleCNN2(activation="ReLU")
 #model = SimpleCNN()
 model.to(device)
 
@@ -100,9 +101,6 @@ noise_variance = 1e-3  # Added Gaussian noise variance
 binsize = 0.07  # size of bins for binning method
 
 # Functions to return upper and lower bounds on entropy of layer activity
-#Klayer_activity = K.placeholder(ndim=2)  # Keras placeholder
-#entropy_func_upper = torch.function([Klayer_activity,], [kde.entropy_estimator_kl(Klayer_activity, noise_variance),])
-#entropy_func_lower = torch.function([Klayer_activity,], [kde.entropy_estimator_bd(Klayer_activity, noise_variance),])
 def entropy_func_upper(activity):
     return kde.entropy_estimator_kl(activity, noise_variance)
 def entropy_func_lower(activity):
@@ -126,12 +124,37 @@ acc_val = []
 loss_tr = []
 loss_val = []
 
-mi_array_a1 = []
-mi_array_a2 = []
-mi_array_a3 = []
-mi_array_a4 = []
+mix_array_a1_u = []
+mix_array_a2_u = []
+mix_array_a3_u = []
+mix_array_a4_u = []
 
-activity = np.zeros((1000, 4, 10304))
+mix_array_a1_l = []
+mix_array_a2_l = []
+mix_array_a3_l = []
+mix_array_a4_l = []
+
+miy_array_a1_u = []
+miy_array_a2_u = []
+miy_array_a3_u = []
+miy_array_a4_u = []
+
+miy_array_a1_l = []
+miy_array_a2_l = []
+miy_array_a3_l = []
+miy_array_a4_l = []
+
+h_array_a1_u = []
+h_array_a2_u = []
+h_array_a3_u = []
+h_array_a4_u = []
+
+h_array_a1_l = []
+h_array_a2_l = []
+h_array_a3_l = []
+h_array_a4_l = []
+
+activity1 = np.zeros((1000, 4, 10304))
 activity2 = np.zeros((1000, 16, 2576))
 activity3 = np.zeros((1000, 32, 648))
 activity4 = np.zeros((1000, 64, 164))
@@ -153,16 +176,13 @@ for epoch in range(EPOCHS):
         spectrogram = spectrogram.unsqueeze(1)
 
         spectrogram = spectrogram.to(device)
-        #output, a1, a2 = model(spectrogram)
         output, a1, a2, a3, a4 = model(spectrogram)
-        activity[ixs] = a1.cpu().detach().numpy()
+        activity1[ixs] = a1.cpu().detach().numpy()
         activity2[ixs] = a2.cpu().detach().numpy()
         activity3[ixs] = a3.cpu().detach().numpy()
         activity4[ixs] = a4.cpu().detach().numpy()
 
         loss = loss_fn(output, label)
-
-        #cepochdata = defaultdict(list)
 
         # backward pass
         optimizer.zero_grad()
@@ -197,7 +217,7 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.squeeze(0)
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
-            val_output, a1, a2, _, _ = model(val_spectrogram)
+            val_output, a1, a2, a3, a4 = model(val_spectrogram)
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
             val_total += val_label.size(0)
@@ -221,9 +241,34 @@ for epoch in range(EPOCHS):
         '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,
                                                                                                                 val_acc,
                                                                                                                 tr_acc))
-    #------KDE estimates
+    #------KDE estimates 1
     # Compute marginal entropies
-    print(activity2.shape)
+    FN = 0
+    h_upper = entropy_func_upper([activity1[:, FN, :], ])
+    h_lower = entropy_func_lower([activity1[:, FN, :], ])
+    # Layer activity given input. This is simply the entropy of the Gaussian noise
+    hM_given_X = kde.kde_condentropy(activity1[:, FN, :], noise_variance)
+
+    # Compute conditional entropies of layer activity given output
+    hM_given_Y_upper = 0.
+    hM_given_Y_lower = 0.
+    for i in range(NUM_LABELS):
+        hcond_upper = entropy_func_upper([activity1[labelixs[i], FN, :], ])
+        hM_given_Y_upper += labelprobs[i] * hcond_upper
+        hcond_lower = entropy_func_lower([activity1[labelixs[i], FN, :], ])
+        hM_given_Y_lower += labelprobs[i] * hcond_lower
+    #upper
+    mix_array_a1_u.append(nats2bits * (h_upper - hM_given_X))
+    miy_array_a1_u.append(nats2bits * (h_upper - hM_given_Y_upper))
+    h_array_a1_u.append(nats2bits * h_upper/10304)
+
+    #lower
+    mix_array_a1_l.append(nats2bits * (h_lower - hM_given_X))
+    miy_array_a1_l.append(nats2bits * (h_lower - hM_given_Y_lower))
+    h_array_a1_l.append(nats2bits * h_lower/10304)
+
+    #------KDE estimates 2
+    # Compute marginal entropies
     FN = 0
     h_upper = entropy_func_upper([activity2[:, FN, :], ])
     h_lower = entropy_func_lower([activity2[:, FN, :], ])
@@ -234,66 +279,251 @@ for epoch in range(EPOCHS):
     hM_given_Y_upper = 0.
     hM_given_Y_lower = 0.
     for i in range(NUM_LABELS):
-        hcond_upper = entropy_func_upper([activity[labelixs[i], FN, :], ])
+        hcond_upper = entropy_func_upper([activity2[labelixs[i], FN, :], ])
         hM_given_Y_upper += labelprobs[i] * hcond_upper
-        hcond_lower = entropy_func_lower([activity[labelixs[i], FN, :], ])
+        hcond_lower = entropy_func_lower([activity2[labelixs[i], FN, :], ])
         hM_given_Y_lower += labelprobs[i] * hcond_lower
+    #upper
+    mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))
+    miy_array_a2_u.append(nats2bits * (h_upper - hM_given_Y_upper))
+    h_array_a2_u.append(nats2bits * h_upper/2576)
 
+    #lower
+    mix_array_a2_l.append(nats2bits * (h_lower - hM_given_X))
+    miy_array_a2_l.append(nats2bits * (h_lower - hM_given_Y_lower))
+    h_array_a2_l.append(nats2bits * h_lower/2576)
 
-    mi_array_a1.append(mi_a1)
-    mi_array_a2.append(mi_a2)
-    mi_array_a3.append(mi_a3)
-    mi_array_a4.append(mi_a4)
+    #------KDE estimates 3
+    # Compute marginal entropies
+    FN = 0
+    h_upper = entropy_func_upper([activity3[:, FN, :], ])
+    h_lower = entropy_func_lower([activity3[:, FN, :], ])
+    # Layer activity given input. This is simply the entropy of the Gaussian noise
+    hM_given_X = kde.kde_condentropy(activity3[:, FN, :], noise_variance)
 
-mi_array_a1 = np.array(mi_array_a1)
-mi_array_a2 = np.array(mi_array_a2)
-mi_array_a3 = np.array(mi_array_a3)
-mi_array_a4 = np.array(mi_array_a4)
+    # Compute conditional entropies of layer activity given output
+    hM_given_Y_upper = 0.
+    hM_given_Y_lower = 0.
+    for i in range(NUM_LABELS):
+        hcond_upper = entropy_func_upper([activity3[labelixs[i], FN, :], ])
+        hM_given_Y_upper += labelprobs[i] * hcond_upper
+        hcond_lower = entropy_func_lower([activity3[labelixs[i], FN, :], ])
+        hM_given_Y_lower += labelprobs[i] * hcond_lower
+    #upper
+    mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))
+    miy_array_a3_u.append(nats2bits * (h_upper - hM_given_Y_upper))
+    h_array_a3_u.append(nats2bits * /648)
 
-np.save(timestamp + '_MI_a1', mi_array_a1)
-np.save(timestamp + '_MI_a2', mi_array_a2)
-np.save(timestamp + '_MI_a3', mi_array_a3)
-np.save(timestamp + '_MI_a4', mi_array_a4)
+    #lower
+    mix_array_a3_l.append(nats2bits * (h_lower - hM_given_X))
+    miy_array_a3_l.append(nats2bits * (h_lower - hM_given_Y_lower))
+    h_array_a3_l.append(nats2bits * h_lower/648)
 
-t = np.arange(len(mi_array_a1))
-plt.plot(t, mi_array_a1, label='MI Conv1')
-plt.plot(t, mi_array_a2, label='MI Conv2')
-plt.plot(t, mi_array_a3, label='MI Conv3')
-plt.plot(t, mi_array_a4, label='MI Conv4')
+    #------KDE estimates 4
+    # Compute marginal entropies
+    FN = 0
+    h_upper = entropy_func_upper([activity4[:, FN, :], ])
+    h_lower = entropy_func_lower([activity4[:, FN, :], ])
+    # Layer activity given input. This is simply the entropy of the Gaussian noise
+    hM_given_X = kde.kde_condentropy(activity4[:, FN, :], noise_variance)
 
+    # Compute conditional entropies of layer activity given output
+    hM_given_Y_upper = 0.
+    hM_given_Y_lower = 0.
+    for i in range(NUM_LABELS):
+        hcond_upper = entropy_func_upper([activity4[labelixs[i], FN, :], ])
+        hM_given_Y_upper += labelprobs[i] * hcond_upper
+        hcond_lower = entropy_func_lower([activity4[labelixs[i], FN, :], ])
+        hM_given_Y_lower += labelprobs[i] * hcond_lower
+    #upper
+    mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))
+    miy_array_a4_u.append(nats2bits * (h_upper - hM_given_Y_upper))
+    h_array_a4_u.append(nats2bits * h_upper/164)
+
+    #lower
+    mix_array_a4_l.append(nats2bits * (h_lower - hM_given_X))
+    miy_array_a4_l.append(nats2bits * (h_lower - hM_given_Y_lower))
+    h_array_a4_l.append(nats2bits * h_lower/164)
+
+mix_array_a1_u = np.array(mix_array_a1_u)
+miy_array_a1_u = np.array(miy_array_a1_u)
+h_array_a1_u = np.array(h_array_a1_u)
+mix_array_a1_l = np.array(mix_array_a1_l)
+miy_array_a1_l = np.array(miy_array_a1_l)
+h_array_a1_l = np.array(h_array_a1_l)
+
+np.save(timestamp + '_MIux_a1', mix_array_a1_u)
+np.save(timestamp + '_MIuy_a1', miy_array_a1_u)
+np.save(timestamp + '_MIuh_a1', h_array_a1_u)
+np.save(timestamp + '_MIlx_a1', mix_array_a1_l)
+np.save(timestamp + '_MIly_a1', miy_array_a1_l)
+np.save(timestamp + '_MIlh_a1', h_array_a1_l)
+
+mix_array_a2_u = np.array(mix_array_a2_u)
+miy_array_a2_u = np.array(miy_array_a2_u)
+h_array_a2_u = np.array(h_array_a2_u)
+mix_array_a2_l = np.array(mix_array_a2_l)
+miy_array_a2_l = np.array(miy_array_a2_l)
+h_array_a2_l = np.array(h_array_a2_l)
+
+np.save(timestamp + '_MIux_a2', mix_array_a2_u)
+np.save(timestamp + '_MIuy_a2', miy_array_a2_u)
+np.save(timestamp + '_MIuh_a2', h_array_a2_u)
+np.save(timestamp + '_MIlx_a2', mix_array_a2_l)
+np.save(timestamp + '_MIly_a2', miy_array_a2_l)
+np.save(timestamp + '_MIlh_a2', h_array_a2_l)
+
+mix_array_a3_u = np.array(mix_array_a3_u)
+miy_array_a3_u = np.array(miy_array_a3_u)
+h_array_a3_u = np.array(h_array_a3_u)
+mix_array_a3_l = np.array(mix_array_a3_l)
+miy_array_a3_l = np.array(miy_array_a3_l)
+h_array_a3_l = np.array(h_array_a3_l)
+
+np.save(timestamp + '_MIux_a3', mix_array_a3_u)
+np.save(timestamp + '_MIuy_a3', miy_array_a3_u)
+np.save(timestamp + '_MIuh_a3', h_array_a3_u)
+np.save(timestamp + '_MIlx_a3', mix_array_a3_l)
+np.save(timestamp + '_MIly_a3', miy_array_a3_l)
+np.save(timestamp + '_MIlh_a3', h_array_a3_l)
+
+mix_array_a4_u = np.array(mix_array_a4_u)
+miy_array_a4_u = np.array(miy_array_a4_u)
+h_array_a4_u = np.array(h_array_a4_u)
+mix_array_a4_l = np.array(mix_array_a4_l)
+miy_array_a4_l = np.array(miy_array_a4_l)
+h_array_a4_l = np.array(h_array_a4_l)
+
+np.save(timestamp + '_MIux_a4', mix_array_a4_u)
+np.save(timestamp + '_MIuy_a4', miy_array_a4_u)
+np.save(timestamp + '_MIuh_a4', h_array_a4_u)
+np.save(timestamp + '_MIlx_a4', mix_array_a4_l)
+np.save(timestamp + '_MIly_a4', miy_array_a4_l)
+np.save(timestamp + '_MIlh_a4', h_array_a4_l)
+
+#plot LOSS & ACCURACY
+
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(loss_val, label='Validation loss')
+plt.plot(loss_tr, label='Training loss')
 plt.xlabel('Epochs')
-plt.ylabel('MI/Entropy(T)')
+plt.ylabel('Loss')
+plt.legend()
+plt.grid()
+plt.title('Loss vs Epochs')
+
+plt.subplot(1, 2, 2)
+plt.plot(acc_val, label='Validation accuracy')
+plt.plot(acc_tr, label='Training accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid()
+plt.title('Accuracy vs Epochs')
+plt.show()
+
+plt.savefig('loss_acc.pdf')
+#----------------------------------------------------------
+#plot scatter UPPER
+epochs = list(range(EPOCHS))
+t = np.arange(len(mix_array_a1_u[:]))
+plt.plot(mix_array_a1_u[:], miy_array_a1_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a1_u[:], miy_array_a1_u[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
+plt.plot(mix_array_a2_u[:], miy_array_a2_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a2_u[:], miy_array_a2_u[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
+plt.plot(mix_array_a3_u[:], miy_array_a3_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.plot(mix_array_a4_u[:], miy_array_a4_u[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+plt.xlabel('I(X,T)')
+plt.ylabel('I(Y,T)')
 plt.grid()
 plt.legend()
+plt.colorbar()
+plt.savefig('mi_xy_u.pdf')
 plt.show()
 
-fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-fig.suptitle('MI/Entropy(T) vs Epochs for Conv Blocks')
+#plot MI bar UPPER
+plt.plot(epochs, h_array_a1_u, label='Entropy L1')
+plt.plot(epochs, h_array_a2_u, label='Entropy L2')
+plt.plot(epochs, h_array_a3_u, label='Entropy L3')
+plt.plot(epochs, h_array_a4_u, label='Entropy L4')
 
-axs[0, 0].plot(t, mi_array_a1, label='MI Conv1', color='blue')
-axs[0, 0].set_title('Conv1')
-axs[0, 0].grid()
-axs[0, 0].set(ylabel='MI/Entropy(T)')
-
-axs[0, 1].plot(t, mi_array_a2, label='MI Conv2', color='orange')
-axs[0, 1].set_title('Conv2')
-axs[0, 1].grid()
-
-axs[1, 0].plot(t, mi_array_a3, label='MI Conv3', color='green')
-axs[1, 0].set_title('Conv3')
-axs[1, 0].grid()
-axs[1, 0].set(xlabel='Epochs', ylabel='MI/Entropy(T)')
-
-axs[1, 1].plot(t, mi_array_a4, label='MI Conv4', color='red')
-axs[1, 1].set_title('Conv4')
-axs[1, 1].grid()
-axs[1, 1].set(xlabel='Epochs')
-
+plt.xlabel('Epochs')
+plt.ylabel('Entropy(T)')
+plt.grid()
+plt.legend()
+plt.savefig('h_u_epo.pdf')
 plt.show()
 
-torch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')
-print('Finished Training')
+#plot scatter LOWER
+plt.plot(mix_array_a1_l[:], miy_array_a1_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a1_l[:], miy_array_a1_l[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
+plt.plot(mix_array_a2_l[:], miy_array_a2_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a2_l[:], miy_array_a2_l[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
+plt.plot(mix_array_a3_l[:], miy_array_a3_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.plot(mix_array_a4_l[:], miy_array_a4_l[:], alpha=0.1, zorder=1)
+plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+plt.xlabel('I(X,T)')
+plt.ylabel('I(Y,T)')
+plt.grid()
+plt.legend()
+plt.colorbar()
+plt.savefig('mi_xy_l.pdf')
+plt.show()
 
+#plot h bar LOWER
+plt.plot(epochs, h_array_a1_l, label='Entropy L1')
+plt.plot(epochs, h_array_a2_l, label='Entropy L2')
+plt.plot(epochs, h_array_a3_l, label='Entropy L3')
+plt.plot(epochs, h_array_a4_l, label='Entropy L4')
 
+plt.xlabel('Epochs')
+plt.ylabel('Entropy(T)')
+plt.grid()
+plt.legend()
+plt.savefig('h_l_epo.pdf')
+plt.show()
+#-------------------------------------------------------------------
+#plot u/l MI vs epochs
+plt.plot(epochs, mix_array_a1_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a1_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 1 Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_1_ul_epo.pdf')
+plt.show()
 
+plt.plot(epochs, mix_array_a2_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a2_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 2 Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_2_ul_epo.pdf')
+plt.show()
 
+plt.plot(epochs, mix_array_a3_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a3_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 3 Upper Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_3_ul_epo.pdf')
+plt.show()
+
+plt.plot(epochs, mix_array_a4_u, label='Upper Entropy')
+plt.plot(epochs, mix_array_a4_l, label='Lower Entropy')
+plt.xlabel('Epochs')
+plt.ylabel('I(X,T)')
+plt.title('Layer 4 Upper Mutual Info (KDE)')
+plt.grid()
+plt.legend()
+plt.savefig('mi_4_ul_epo.pdf')
+plt.show()
