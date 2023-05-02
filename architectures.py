@@ -4,33 +4,45 @@ import torch.nn as nn
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self):
+    def __init__(self, activation='ReLU', layers=4):
         super().__init__()
-        conv_layers = []
         self.name = 'SimpleCNN'
+        assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"
+
+        # Choose the activation function
+        if activation == 'ReLU':
+            self.activation = nn.ReLU
+        else:
+            self.activation = nn.Tanh
+
+        self.layers_number = layers
+        self.F1 = 4
+        self.F2 = 8
+        self.F3 = 8
+        self.F4 = 16
         # First Convolution Block with Relu and Batch Norm. Use Kaiming Initialization
-        self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
-        self.relu1 = nn.ReLU()
-        self.bn1 = nn.BatchNorm2d(4)
+        self.conv1 = nn.Conv2d(1, self.F1, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
+        self.relu1 = self.activation()
+        self.bn1 = nn.BatchNorm2d(self.F1)
 
         # Second Convolution Block
-        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.relu2 = nn.ReLU()
-        self.bn2 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(self.F1, self.F2, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.relu2 = self.activation ()
+        self.bn2 = nn.BatchNorm2d(self.F2)
 
         # Third Convolution Block
-        self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.relu3 = nn.ReLU()
-        self.bn3 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(self.F2, self.F3, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.relu3 = self.activation ()
+        self.bn3 = nn.BatchNorm2d(self.F3)
 
         # Fourth Convolution Block
-        self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-        self.relu4 = nn.ReLU()
-        self.bn4 = nn.BatchNorm2d(64)
+        self.conv4 = nn.Conv2d(self.F3, self.F4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.relu4 = self.activation()
+        self.bn4 = nn.BatchNorm2d(self.F4)
 
         # Linear Classifier
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
-        self.lin = nn.Linear(in_features=16, out_features=8)
+        self.lin = nn.Linear(in_features=self.F4, out_features=8)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -41,10 +53,24 @@ class SimpleCNN(nn.Module):
         x = self.relu2(x)
         a2 = torch.flatten(x, 2, 3)
         x = self.bn2(x)
+        if self.layers_number == 4:
+            x = self.conv3(x)
+            x = self.relu3(x)
+            a3 = torch.flatten(x, 2, 3)
+            x = self.bn3(x)
+            x = self.conv4(x)
+            x = self.relu4(x)
+            a4 = torch.flatten(x, 2, 3)
+            x = self.bn4(x)
+
         x = self.ap(x)
         x = x.view(x.shape[0], -1)
         x = self.lin(x)
-        return x, a1, a2
+
+        if self.layers_number == 4:
+            return x, a1, a2, a3, a4
+        else:
+            return x, a1, a2
 
 
 class Res2DBlock(nn.Module):
