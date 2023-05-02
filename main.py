@@ -15,11 +15,12 @@ from torchsummary import summary
 
 from utils import load
 from dataloader import FMA2D_spec
-from architectures import SimpleCNN, ResNet, SimpleCNN2
+from architectures_ import SimpleCNN, ResNet#, SimpleCNN2
 from simplebinmi import bin_calc_information2
 
 #import kde
-import kde_torch as kde
+#import kde_torch as kde
+import new1 as kde
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,7 +51,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 100
+EPOCHS = 200
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -86,8 +87,8 @@ for spec, label, ixs in dataloader:
 p_dropout = 0.3
 #model = ResNet(FN=64, p_dropout=p_dropout)
 #added a condition to allow to specify ReLU or tanh
-model = SimpleCNN2(activation="ReLU")
-#model = SimpleCNN()
+#model = SimpleCNN2(activation="ReLU")
+model = SimpleCNN()
 model.to(device)
 
 #summary(model, (1, 128, 1290))
@@ -154,9 +155,9 @@ h_array_a3_l = []
 h_array_a4_l = []
 
 activity1 = np.zeros((1000, 4, 10304))
-activity2 = np.zeros((1000, 16, 2576))
-activity3 = np.zeros((1000, 32, 648))
-activity4 = np.zeros((1000, 64, 164))
+activity2 = np.zeros((1000, 8, 2576))
+activity3 = np.zeros((1000, 8, 648))
+activity4 = np.zeros((1000, 16, 164))
 
 t0 = time.time()
 prev_a = 0
@@ -176,6 +177,7 @@ for epoch in range(EPOCHS):
 
         spectrogram = spectrogram.to(device)
         output, a1, a2, a3, a4 = model(spectrogram)
+        #output, a1, a2 = model(spectrogram)
         activity1[ixs] = a1.cpu().detach().numpy()
         activity2[ixs] = a2.cpu().detach().numpy()
         activity3[ixs] = a3.cpu().detach().numpy()
@@ -217,6 +219,7 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
             val_output, a1, a2, a3, a4 = model(val_spectrogram)
+            #val_output, a1, a2 = model(val_spectrogram)
             activity1[ixs] = a1.cpu().detach().numpy()
             activity2[ixs] = a2.cpu().detach().numpy()
             activity3[ixs] = a3.cpu().detach().numpy()
