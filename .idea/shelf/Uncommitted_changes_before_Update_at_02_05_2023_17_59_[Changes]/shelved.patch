@@ -1,0 +1,244 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nimport time\r\nfrom collections import defaultdict\r\n\r\nimport numpy as np\r\nimport pandas as pd\r\nimport matplotlib.pyplot as plt\r\nfrom sklearn.preprocessing import LabelBinarizer\r\n\r\nimport torch\r\nimport torchaudio\r\nimport torch.nn as nn\r\nfrom torch.utils.data import Dataset\r\nfrom torchsummary import summary\r\n\r\nfrom utils import load\r\nfrom dataloader import FMA2D_spec\r\nfrom architectures import SimpleCNN, ResNet, SimpleCNN2\r\nfrom simplebinmi import bin_calc_information2\r\n\r\n#import kde\r\nimport kde_torch as kde\r\n\r\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\r\n\r\nDATA_DIR = './data/fma_small'\r\n\r\n# download data first from these links:\r\n# curl -O https://os.unil.cloud.switch.ch/fma/fma_metadata.zip\r\n# curl -O https://os.unil.cloud.switch.ch/fma/fma_small.zip\r\n\r\ntracks = load('./data/fma_metadata/tracks.csv')\r\nsubset = tracks.index[tracks['set', 'subset'] <= 'small']\r\n\r\ntracks = tracks.loc[subset][:1000]\r\ntrain = tracks.index[tracks['set', 'split'] == 'training']\r\nval = tracks.index[tracks['set', 'split'] == 'validation']\r\ntest = tracks.index[tracks['set', 'split'] == 'test']\r\n\r\nlabels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])\r\nlabels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)\r\n\r\n\r\nNUM_LABELS = 8\r\nlabelixs = {}\r\ny = np.argmax(labels_onehot.to_numpy(), axis=1)\r\nfor i in range(NUM_LABELS):\r\n    labelixs[i] = y == i\r\n\r\nlabelprobs = np.mean(labels_onehot, axis=0)\r\n\r\nBATCH = 256\r\nEPOCHS = 100\r\naugment_prob = 0.8\r\nlabels_onehot_np = np.array(labels_onehot)\r\n\r\n# create a training dataset and dataloader\r\ndataset_train = FMA2D_spec(DATA_DIR, train, labels_onehot, transforms=False)\r\ndataloader = torch.utils.data.DataLoader(dataset_train, batch_size=BATCH, shuffle=True)\r\n\r\n# create a validation dataset and dataloader\r\ndataset_valid = FMA2D_spec(DATA_DIR, val, labels_onehot, transforms=False)\r\nval_dataloader = torch.utils.data.DataLoader(dataset_valid, batch_size=BATCH, shuffle=True)\r\n\r\n# define the loss function and the optimizer\r\nloss_fn = nn.CrossEntropyLoss()\r\n\r\n# Lee 2017\r\n# SGD optimizer\r\n#optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)\r\n#scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.2, patience=5)\r\n\r\nfrom utils import plot_spectrogram\r\nfor spec, label, ixs in dataloader:\r\n    #print(spec.size())\r\n    #print(len(label))\r\n    #print(ixs)\r\n    #plot_spectrogram(spec[0])\r\n    #print(spec.size(), ixs)\r\n    #plot_spectrogram(spec[0])\r\n    input_size = spec.size()[2]\r\n    break\r\n\r\n#plot MI I(X,T) for conv blocks\r\n\r\np_dropout = 0.3\r\n#model = ResNet(FN=64, p_dropout=p_dropout)\r\n#added a condition to allow to specify ReLU or tanh\r\nmodel = SimpleCNN2(activation=\"ReLU\")\r\n#model = SimpleCNN()\r\nmodel.to(device)\r\n\r\n#summary(model, (1, 128, 1290))\r\n\r\n#------------KDE functions\r\n#nats to bits conversion factor\r\nnats2bits = 1.0/np.log(2)\r\n#upper/lower entropy estimates\r\nnoise_variance = 1e-3  # Added Gaussian noise variance\r\nbinsize = 0.07  # size of bins for binning method\r\n\r\n# Functions to return upper and lower bounds on entropy of layer activity\r\ndef entropy_func_upper(activity):\r\n    return kde.entropy_estimator_kl(activity, noise_variance)\r\ndef entropy_func_lower(activity):\r\n    return kde.entropy_estimator_bd(activity, noise_variance)\r\n#------------------------\r\n\r\n# Adam optimizer01\r\nlr = 0.01\r\noptimizer = torch.optim.Adam(model.parameters())\r\n\r\ntimestamp = time.strftime(\"apr%d_t%H%M\", time.gmtime())\r\nmodel_name = f\"{model.name}_B{BATCH}_E{EPOCHS}_LR{lr}_pD{p_dropout}_A{augment_prob}_{timestamp}\"\r\n\r\ni = 0\r\nrunning_loss = 0.0\r\nbest_val_loss = float('inf')  # initialize the best validation loss\r\n\r\n# train the model\r\nacc_tr = []\r\nacc_val = []\r\nloss_tr = []\r\nloss_val = []\r\n\r\nmix_array_a1_u = []\r\nmix_array_a2_u = []\r\nmix_array_a3_u = []\r\nmix_array_a4_u = []\r\n\r\nmix_array_a1_l = []\r\nmix_array_a2_l = []\r\nmix_array_a3_l = []\r\nmix_array_a4_l = []\r\n\r\nmiy_array_a1_u = []\r\nmiy_array_a2_u = []\r\nmiy_array_a3_u = []\r\nmiy_array_a4_u = []\r\n\r\nmiy_array_a1_l = []\r\nmiy_array_a2_l = []\r\nmiy_array_a3_l = []\r\nmiy_array_a4_l = []\r\n\r\nh_array_a1_u = []\r\nh_array_a2_u = []\r\nh_array_a3_u = []\r\nh_array_a4_u = []\r\n\r\nh_array_a1_l = []\r\nh_array_a2_l = []\r\nh_array_a3_l = []\r\nh_array_a4_l = []\r\n\r\nactivity1 = np.zeros((1000, 4, 10304))\r\nactivity2 = np.zeros((1000, 16, 2576))\r\nactivity3 = np.zeros((1000, 32, 648))\r\nactivity4 = np.zeros((1000, 64, 164))\r\n\r\nt0 = time.time()\r\nprev_a = 0\r\n\r\nfor epoch in range(EPOCHS):\r\n    # evaluate the model on the training dataset\r\n    train_correct = 0\r\n    train_total = 0\r\n    for spectrogram, label, ixs in dataloader:\r\n        model.train()\r\n        label = label.to(device)\r\n        train_label = torch.argmax(label, dim=1)\r\n\r\n        # forward pass\r\n        spectrogram = spectrogram.squeeze(0)\r\n        spectrogram = spectrogram.unsqueeze(1)\r\n\r\n        spectrogram = spectrogram.to(device)\r\n        output, a1, a2, a3, a4 = model(spectrogram)\r\n        activity1[ixs] = a1.cpu().detach().numpy()\r\n        activity2[ixs] = a2.cpu().detach().numpy()\r\n        activity3[ixs] = a3.cpu().detach().numpy()\r\n        activity4[ixs] = a4.cpu().detach().numpy()\r\n\r\n        loss = loss_fn(output, label)\r\n\r\n        # backward pass\r\n        optimizer.zero_grad()\r\n        model.zero_grad()\r\n        loss.backward()\r\n        optimizer.step()\r\n\r\n        # Update the learning rate\r\n        # scheduler.step(loss)\r\n\r\n        _, train_predicted = torch.max(output.data, 1)\r\n        train_total += train_label.size(0)\r\n        train_correct += (train_predicted == train_label).sum().item()\r\n        # print statistics\r\n        i += 1\r\n        running_loss += loss.item()\r\n\r\n    loss = running_loss / len(dataloader)\r\n    loss_tr.append(loss)\r\n    print('[%d, %5d subsamples] Training loss: %.3f' % (epoch + 1, i * BATCH, loss))\r\n    running_loss = 0\r\n    # evaluate the model on the validation dataset\r\n    val_loss = 0.0\r\n    val_correct = 0\r\n    val_total = 0\r\n    model.eval()\r\n    with torch.no_grad():\r\n        for val_spectrogram, val_label, ixs in val_dataloader:\r\n            val_label = val_label.to(device)\r\n            val_label = torch.argmax(val_label, dim=1)\r\n\r\n            val_spectrogram = val_spectrogram.squeeze(0)\r\n            val_spectrogram = val_spectrogram.unsqueeze(1)\r\n            val_spectrogram = val_spectrogram.to(device)\r\n            val_output, a1, a2, a3, a4 = model(val_spectrogram)\r\n            activity1[ixs] = a1.cpu().detach().numpy()\r\n            activity2[ixs] = a2.cpu().detach().numpy()\r\n            activity3[ixs] = a3.cpu().detach().numpy()\r\n            activity4[ixs] = a4.cpu().detach().numpy()\r\n            val_loss += loss_fn(val_output, val_label).item()\r\n            _, val_predicted = torch.max(val_output.data, 1)\r\n            val_total += val_label.size(0)\r\n            val_correct += (val_predicted == val_label).sum().item()\r\n\r\n    loss = val_loss / len(val_dataloader)\r\n    loss_val.append(loss)\r\n    val_acc = val_correct / val_total\r\n    tr_acc = train_correct / train_total\r\n    acc_tr.append(tr_acc)\r\n    acc_val.append(val_acc)\r\n    t1 = time.time()\r\n    t = (t1 - t0) / 60\r\n    # Save the model if the validation loss is the best seen so far\r\n    if loss < best_val_loss:\r\n        best_val_loss = loss\r\n        best_val_acc = val_acc\r\n        best_tr_acc = tr_acc\r\n        best_state_dict = model.state_dict()\r\n    print(\r\n        '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,\r\n                                                                                                                val_acc,\r\n                                                                                                                tr_acc))\r\n    #------KDE estimates 1\r\n    # Compute marginal entropies\r\n    FN = 0\r\n    h_upper = entropy_func_upper([activity1[:, FN, :], ])\r\n    h_lower = entropy_func_lower([activity1[:, FN, :], ])\r\n    # Layer activity given input. This is simply the entropy of the Gaussian noise\r\n    hM_given_X = kde.kde_condentropy(activity1[:, FN, :], noise_variance)\r\n\r\n    # Compute conditional entropies of layer activity given output\r\n    hM_given_Y_upper = 0.\r\n    hM_given_Y_lower = 0.\r\n    for i in range(NUM_LABELS):\r\n        hcond_upper = entropy_func_upper([activity1[labelixs[i], FN, :], ])\r\n        hM_given_Y_upper += labelprobs[i] * hcond_upper\r\n        hcond_lower = entropy_func_lower([activity1[labelixs[i], FN, :], ])\r\n        hM_given_Y_lower += labelprobs[i] * hcond_lower\r\n    #upper\r\n    mix_array_a1_u.append(nats2bits * (h_upper - hM_given_X))\r\n    miy_array_a1_u.append(nats2bits * (h_upper - hM_given_Y_upper))\r\n    h_array_a1_u.append(nats2bits * h_upper * (1/10304))\r\n\r\n    #lower\r\n    mix_array_a1_l.append(nats2bits * (h_lower - hM_given_X))\r\n    miy_array_a1_l.append(nats2bits * (h_lower - hM_given_Y_lower))\r\n    h_array_a1_l.append(nats2bits * h_lower * (1/10304))\r\n\r\n    #------KDE estimates 2\r\n    # Compute marginal entropies\r\n    FN = 0\r\n    h_upper = entropy_func_upper([activity2[:, FN, :], ])\r\n    h_lower = entropy_func_lower([activity2[:, FN, :], ])\r\n    # Layer activity given input. This is simply the entropy of the Gaussian noise\r\n    hM_given_X = kde.kde_condentropy(activity2[:, FN, :], noise_variance)\r\n\r\n    # Compute conditional entropies of layer activity given output\r\n    hM_given_Y_upper = 0.\r\n    hM_given_Y_lower = 0.\r\n    for i in range(NUM_LABELS):\r\n        hcond_upper = entropy_func_upper([activity2[labelixs[i], FN, :], ])\r\n        hM_given_Y_upper += labelprobs[i] * hcond_upper\r\n        hcond_lower = entropy_func_lower([activity2[labelixs[i], FN, :], ])\r\n        hM_given_Y_lower += labelprobs[i] * hcond_lower\r\n    #upper\r\n    mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))\r\n    miy_array_a2_u.append(nats2bits * (h_upper - hM_given_Y_upper))\r\n    h_array_a2_u.append(nats2bits * h_upper * (1/2576))\r\n\r\n    #lower\r\n    mix_array_a2_l.append(nats2bits * (h_lower - hM_given_X))\r\n    miy_array_a2_l.append(nats2bits * (h_lower - hM_given_Y_lower))\r\n    h_array_a2_l.append(nats2bits * h_lower * (1/2576))\r\n\r\n    #------KDE estimates 3\r\n    # Compute marginal entropies\r\n    FN = 0\r\n    h_upper = entropy_func_upper([activity3[:, FN, :], ])\r\n    h_lower = entropy_func_lower([activity3[:, FN, :], ])\r\n    # Layer activity given input. This is simply the entropy of the Gaussian noise\r\n    hM_given_X = kde.kde_condentropy(activity3[:, FN, :], noise_variance)\r\n\r\n    # Compute conditional entropies of layer activity given output\r\n    hM_given_Y_upper = 0.\r\n    hM_given_Y_lower = 0.\r\n    for i in range(NUM_LABELS):\r\n        hcond_upper = entropy_func_upper([activity3[labelixs[i], FN, :], ])\r\n        hM_given_Y_upper += labelprobs[i] * hcond_upper\r\n        hcond_lower = entropy_func_lower([activity3[labelixs[i], FN, :], ])\r\n        hM_given_Y_lower += labelprobs[i] * hcond_lower\r\n    #upper\r\n    mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))\r\n    miy_array_a3_u.append(nats2bits * (h_upper - hM_given_Y_upper))\r\n    h_array_a3_u.append(nats2bits * h_upper * (1/648))\r\n\r\n    #lower\r\n    mix_array_a3_l.append(nats2bits * (h_lower - hM_given_X))\r\n    miy_array_a3_l.append(nats2bits * (h_lower - hM_given_Y_lower))\r\n    h_array_a3_l.append(nats2bits * h_lower * (1/648))\r\n\r\n    #------KDE estimates 4\r\n    # Compute marginal entropies\r\n    FN = 0\r\n    h_upper = entropy_func_upper([activity4[:, FN, :], ])\r\n    h_lower = entropy_func_lower([activity4[:, FN, :], ])\r\n    # Layer activity given input. This is simply the entropy of the Gaussian noise\r\n    hM_given_X = kde.kde_condentropy(activity4[:, FN, :], noise_variance)\r\n\r\n    # Compute conditional entropies of layer activity given output\r\n    hM_given_Y_upper = 0.\r\n    hM_given_Y_lower = 0.\r\n    for i in range(NUM_LABELS):\r\n        hcond_upper = entropy_func_upper([activity4[labelixs[i], FN, :], ])\r\n        hM_given_Y_upper += labelprobs[i] * hcond_upper\r\n        hcond_lower = entropy_func_lower([activity4[labelixs[i], FN, :], ])\r\n        hM_given_Y_lower += labelprobs[i] * hcond_lower\r\n    #upper\r\n    mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))\r\n    miy_array_a4_u.append(nats2bits * (h_upper - hM_given_Y_upper))\r\n    h_array_a4_u.append(nats2bits * h_upper * (1/164))\r\n\r\n    #lower\r\n    mix_array_a4_l.append(nats2bits * (h_lower - hM_given_X))\r\n    miy_array_a4_l.append(nats2bits * (h_lower - hM_given_Y_lower))\r\n    h_array_a4_l.append(nats2bits * h_lower * (1/164))\r\n\r\nmix_array_a1_u = np.array(mix_array_a1_u)\r\nmiy_array_a1_u = np.array(miy_array_a1_u)\r\nh_array_a1_u = np.array(h_array_a1_u)\r\nmix_array_a1_l = np.array(mix_array_a1_l)\r\nmiy_array_a1_l = np.array(miy_array_a1_l)\r\nh_array_a1_l = np.array(h_array_a1_l)\r\n\r\nnp.save(timestamp + '_MIux_a1', mix_array_a1_u)\r\nnp.save(timestamp + '_MIuy_a1', miy_array_a1_u)\r\nnp.save(timestamp + '_MIuh_a1', h_array_a1_u)\r\nnp.save(timestamp + '_MIlx_a1', mix_array_a1_l)\r\nnp.save(timestamp + '_MIly_a1', miy_array_a1_l)\r\nnp.save(timestamp + '_MIlh_a1', h_array_a1_l)\r\n\r\nmix_array_a2_u = np.array(mix_array_a2_u)\r\nmiy_array_a2_u = np.array(miy_array_a2_u)\r\nh_array_a2_u = np.array(h_array_a2_u)\r\nmix_array_a2_l = np.array(mix_array_a2_l)\r\nmiy_array_a2_l = np.array(miy_array_a2_l)\r\nh_array_a2_l = np.array(h_array_a2_l)\r\n\r\nnp.save(timestamp + '_MIux_a2', mix_array_a2_u)\r\nnp.save(timestamp + '_MIuy_a2', miy_array_a2_u)\r\nnp.save(timestamp + '_MIuh_a2', h_array_a2_u)\r\nnp.save(timestamp + '_MIlx_a2', mix_array_a2_l)\r\nnp.save(timestamp + '_MIly_a2', miy_array_a2_l)\r\nnp.save(timestamp + '_MIlh_a2', h_array_a2_l)\r\n\r\nmix_array_a3_u = np.array(mix_array_a3_u)\r\nmiy_array_a3_u = np.array(miy_array_a3_u)\r\nh_array_a3_u = np.array(h_array_a3_u)\r\nmix_array_a3_l = np.array(mix_array_a3_l)\r\nmiy_array_a3_l = np.array(miy_array_a3_l)\r\nh_array_a3_l = np.array(h_array_a3_l)\r\n\r\nnp.save(timestamp + '_MIux_a3', mix_array_a3_u)\r\nnp.save(timestamp + '_MIuy_a3', miy_array_a3_u)\r\nnp.save(timestamp + '_MIuh_a3', h_array_a3_u)\r\nnp.save(timestamp + '_MIlx_a3', mix_array_a3_l)\r\nnp.save(timestamp + '_MIly_a3', miy_array_a3_l)\r\nnp.save(timestamp + '_MIlh_a3', h_array_a3_l)\r\n\r\nmix_array_a4_u = np.array(mix_array_a4_u)\r\nmiy_array_a4_u = np.array(miy_array_a4_u)\r\nh_array_a4_u = np.array(h_array_a4_u)\r\nmix_array_a4_l = np.array(mix_array_a4_l)\r\nmiy_array_a4_l = np.array(miy_array_a4_l)\r\nh_array_a4_l = np.array(h_array_a4_l)\r\n\r\nnp.save(timestamp + '_MIux_a4', mix_array_a4_u)\r\nnp.save(timestamp + '_MIuy_a4', miy_array_a4_u)\r\nnp.save(timestamp + '_MIuh_a4', h_array_a4_u)\r\nnp.save(timestamp + '_MIlx_a4', mix_array_a4_l)\r\nnp.save(timestamp + '_MIly_a4', miy_array_a4_l)\r\nnp.save(timestamp + '_MIlh_a4', h_array_a4_l)\r\n\r\n#plot LOSS & ACCURACY\r\n\r\nplt.figure(figsize=(12, 5))\r\nplt.subplot(1, 2, 1)\r\nplt.plot(loss_val, label='Validation loss')\r\nplt.plot(loss_tr, label='Training loss')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('Loss')\r\nplt.legend()\r\nplt.grid()\r\nplt.title('Loss vs Epochs')\r\n\r\nplt.subplot(1, 2, 2)\r\nplt.plot(acc_val, label='Validation accuracy')\r\nplt.plot(acc_tr, label='Training accuracy')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('Accuracy')\r\nplt.legend()\r\nplt.grid()\r\nplt.title('Accuracy vs Epochs')\r\nplt.show()\r\n\r\nplt.savefig('loss_acc.pdf')\r\n#----------------------------------------------------------\r\n#plot scatter UPPER\r\nepochs = list(range(EPOCHS))\r\nt = np.arange(len(mix_array_a1_u[:]))\r\nplt.plot(mix_array_a1_u[:], miy_array_a1_u[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a1_u[:], miy_array_a1_u[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)\r\nplt.plot(mix_array_a2_u[:], miy_array_a2_u[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a2_u[:], miy_array_a2_u[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)\r\nplt.plot(mix_array_a3_u[:], miy_array_a3_u[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)\r\nplt.plot(mix_array_a4_u[:], miy_array_a4_u[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)\r\nplt.xlabel('I(X,T)')\r\nplt.ylabel('I(Y,T)')\r\nplt.grid()\r\n#plt.legend()\r\nplt.colorbar()\r\nplt.savefig('mi_xy_u.pdf')\r\nplt.show()\r\n\r\n#plot MI bar UPPER\r\nplt.plot(epochs, h_array_a1_u, label='Entropy L1')\r\nplt.plot(epochs, h_array_a2_u, label='Entropy L2')\r\nplt.plot(epochs, h_array_a3_u, label='Entropy L3')\r\nplt.plot(epochs, h_array_a4_u, label='Entropy L4')\r\n\r\nplt.xlabel('Epochs')\r\nplt.ylabel('Entropy(T)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('h_u_epo.pdf')\r\nplt.show()\r\n\r\n#plot scatter LOWER\r\nplt.plot(mix_array_a1_l[:], miy_array_a1_l[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a1_l[:], miy_array_a1_l[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)\r\nplt.plot(mix_array_a2_l[:], miy_array_a2_l[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a2_l[:], miy_array_a2_l[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)\r\nplt.plot(mix_array_a3_l[:], miy_array_a3_l[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)\r\nplt.plot(mix_array_a4_l[:], miy_array_a4_l[:], alpha=0.1, zorder=1)\r\nplt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)\r\nplt.xlabel('I(X,T)')\r\nplt.ylabel('I(Y,T)')\r\nplt.grid()\r\n#plt.legend()\r\nplt.colorbar()\r\nplt.savefig('mi_xy_l.pdf')\r\nplt.show()\r\n\r\n#plot h bar LOWER\r\nplt.plot(epochs, h_array_a1_l, label='Entropy L1')\r\nplt.plot(epochs, h_array_a2_l, label='Entropy L2')\r\nplt.plot(epochs, h_array_a3_l, label='Entropy L3')\r\nplt.plot(epochs, h_array_a4_l, label='Entropy L4')\r\n\r\nplt.xlabel('Epochs')\r\nplt.ylabel('Entropy(T)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('h_l_epo.pdf')\r\nplt.show()\r\n#-------------------------------------------------------------------\r\n#plot u/l MI vs epochs\r\n#h = [nats2bits * np.log(10304) / np.log(8)] * len(epochs)\r\n#plt.plot(epochs, h, linestyle='dashed')#upper bound on the mutual information\r\nplt.plot(epochs, mix_array_a1_u, label='Upper Entropy')\r\nplt.plot(epochs, mix_array_a1_l, label='Lower Entropy')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('I(X,T)')\r\nplt.title('Layer 1 Mutual Info (KDE)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('mi_1_ul_epo.pdf')\r\nplt.show()\r\n\r\n#h = [nats2bits * np.log(2576) / np.log(8)] * len(epochs)\r\n#plt.plot(epochs, h, linestyle='dashed')\r\nplt.plot(epochs, mix_array_a2_u, label='Upper Entropy')\r\nplt.plot(epochs, mix_array_a2_l, label='Lower Entropy')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('I(X,T)')\r\nplt.title('Layer 2 Mutual Info (KDE)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('mi_2_ul_epo.pdf')\r\nplt.show()\r\n\r\n#h = [nats2bits * np.log(648) / np.log(8)] * len(epochs)\r\n#plt.plot(epochs, h, linestyle='dashed')\r\nplt.plot(epochs, mix_array_a3_u, label='Upper Entropy')\r\nplt.plot(epochs, mix_array_a3_l, label='Lower Entropy')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('I(X,T)')\r\nplt.title('Layer 3 Upper Mutual Info (KDE)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('mi_3_ul_epo.pdf')\r\nplt.show()\r\n\r\n#h = [nats2bits * np.log(164) / np.log(8)] * len(epochs)\r\n#plt.plot(epochs, h, linestyle='dashed')\r\nplt.plot(epochs, mix_array_a4_u, label='Upper Entropy')\r\nplt.plot(epochs, mix_array_a4_l, label='Lower Entropy')\r\nplt.xlabel('Epochs')\r\nplt.ylabel('I(X,T)')\r\nplt.title('Layer 4 Upper Mutual Info (KDE)')\r\nplt.grid()\r\nplt.legend()\r\nplt.savefig('mi_4_ul_epo.pdf')\r\nplt.show()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision 4db0bd8bc0811f27313ef65280b312340cb60fcc)
++++ b/main.py	(date 1683043106279)
+@@ -15,7 +15,7 @@
+ 
+ from utils import load
+ from dataloader import FMA2D_spec
+-from architectures import SimpleCNN, ResNet, SimpleCNN2
++from architectures_ import SimpleCNN, ResNet#, SimpleCNN2
+ from simplebinmi import bin_calc_information2
+ 
+ #import kde
+@@ -50,7 +50,7 @@
+ labelprobs = np.mean(labels_onehot, axis=0)
+ 
+ BATCH = 256
+-EPOCHS = 100
++EPOCHS = 200
+ augment_prob = 0.8
+ labels_onehot_np = np.array(labels_onehot)
+ 
+@@ -86,8 +86,8 @@
+ p_dropout = 0.3
+ #model = ResNet(FN=64, p_dropout=p_dropout)
+ #added a condition to allow to specify ReLU or tanh
+-model = SimpleCNN2(activation="ReLU")
+-#model = SimpleCNN()
++#model = SimpleCNN2(activation="ReLU")
++model = SimpleCNN()
+ model.to(device)
+ 
+ #summary(model, (1, 128, 1290))
+@@ -154,9 +154,9 @@
+ h_array_a4_l = []
+ 
+ activity1 = np.zeros((1000, 4, 10304))
+-activity2 = np.zeros((1000, 16, 2576))
+-activity3 = np.zeros((1000, 32, 648))
+-activity4 = np.zeros((1000, 64, 164))
++activity2 = np.zeros((1000, 8, 2576))
++activity3 = np.zeros((1000, 8, 648))
++activity4 = np.zeros((1000, 16, 164))
+ 
+ t0 = time.time()
+ prev_a = 0
+@@ -175,11 +175,12 @@
+         spectrogram = spectrogram.unsqueeze(1)
+ 
+         spectrogram = spectrogram.to(device)
+-        output, a1, a2, a3, a4 = model(spectrogram)
++        #output, a1, a2, a3, a4 = model(spectrogram)
++        output, a1, a2 = model(spectrogram)
+         activity1[ixs] = a1.cpu().detach().numpy()
+         activity2[ixs] = a2.cpu().detach().numpy()
+-        activity3[ixs] = a3.cpu().detach().numpy()
+-        activity4[ixs] = a4.cpu().detach().numpy()
++        #activity3[ixs] = a3.cpu().detach().numpy()
++        #activity4[ixs] = a4.cpu().detach().numpy()
+ 
+         loss = loss_fn(output, label)
+ 
+@@ -216,11 +217,12 @@
+             val_spectrogram = val_spectrogram.squeeze(0)
+             val_spectrogram = val_spectrogram.unsqueeze(1)
+             val_spectrogram = val_spectrogram.to(device)
+-            val_output, a1, a2, a3, a4 = model(val_spectrogram)
++            #val_output, a1, a2, a3, a4 = model(val_spectrogram)
++            val_output, a1, a2 = model(val_spectrogram)
+             activity1[ixs] = a1.cpu().detach().numpy()
+             activity2[ixs] = a2.cpu().detach().numpy()
+-            activity3[ixs] = a3.cpu().detach().numpy()
+-            activity4[ixs] = a4.cpu().detach().numpy()
++            #activity3[ixs] = a3.cpu().detach().numpy()
++            #activity4[ixs] = a4.cpu().detach().numpy()
+             val_loss += loss_fn(val_output, val_label).item()
+             _, val_predicted = torch.max(val_output.data, 1)
+             val_total += val_label.size(0)
+@@ -272,19 +274,19 @@
+ 
+     #------KDE estimates 2
+     # Compute marginal entropies
+-    FN = 0
+-    h_upper = entropy_func_upper([activity2[:, FN, :], ])
+-    h_lower = entropy_func_lower([activity2[:, FN, :], ])
++    FN = -1
++    h_upper = entropy_func_upper([activity1[:, FN, :], ])
++    h_lower = entropy_func_lower([activity1[:, FN, :], ])
+     # Layer activity given input. This is simply the entropy of the Gaussian noise
+-    hM_given_X = kde.kde_condentropy(activity2[:, FN, :], noise_variance)
++    hM_given_X = kde.kde_condentropy(activity1[:, FN, :], noise_variance)
+ 
+     # Compute conditional entropies of layer activity given output
+     hM_given_Y_upper = 0.
+     hM_given_Y_lower = 0.
+     for i in range(NUM_LABELS):
+-        hcond_upper = entropy_func_upper([activity2[labelixs[i], FN, :], ])
++        hcond_upper = entropy_func_upper([activity1[labelixs[i], FN, :], ])
+         hM_given_Y_upper += labelprobs[i] * hcond_upper
+-        hcond_lower = entropy_func_lower([activity2[labelixs[i], FN, :], ])
++        hcond_lower = entropy_func_lower([activity1[labelixs[i], FN, :], ])
+         hM_given_Y_lower += labelprobs[i] * hcond_lower
+     #upper
+     mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))
+@@ -299,18 +301,18 @@
+     #------KDE estimates 3
+     # Compute marginal entropies
+     FN = 0
+-    h_upper = entropy_func_upper([activity3[:, FN, :], ])
+-    h_lower = entropy_func_lower([activity3[:, FN, :], ])
++    h_upper = entropy_func_upper([activity2[:, FN, :], ])
++    h_lower = entropy_func_lower([activity2[:, FN, :], ])
+     # Layer activity given input. This is simply the entropy of the Gaussian noise
+-    hM_given_X = kde.kde_condentropy(activity3[:, FN, :], noise_variance)
++    hM_given_X = kde.kde_condentropy(activity2[:, FN, :], noise_variance)
+ 
+     # Compute conditional entropies of layer activity given output
+     hM_given_Y_upper = 0.
+     hM_given_Y_lower = 0.
+     for i in range(NUM_LABELS):
+-        hcond_upper = entropy_func_upper([activity3[labelixs[i], FN, :], ])
++        hcond_upper = entropy_func_upper([activity2[labelixs[i], FN, :], ])
+         hM_given_Y_upper += labelprobs[i] * hcond_upper
+-        hcond_lower = entropy_func_lower([activity3[labelixs[i], FN, :], ])
++        hcond_lower = entropy_func_lower([activity2[labelixs[i], FN, :], ])
+         hM_given_Y_lower += labelprobs[i] * hcond_lower
+     #upper
+     mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))
+@@ -324,19 +326,19 @@
+ 
+     #------KDE estimates 4
+     # Compute marginal entropies
+-    FN = 0
+-    h_upper = entropy_func_upper([activity4[:, FN, :], ])
+-    h_lower = entropy_func_lower([activity4[:, FN, :], ])
++    FN = -1
++    h_upper = entropy_func_upper([activity2[:, FN, :], ])
++    h_lower = entropy_func_lower([activity2[:, FN, :], ])
+     # Layer activity given input. This is simply the entropy of the Gaussian noise
+-    hM_given_X = kde.kde_condentropy(activity4[:, FN, :], noise_variance)
++    hM_given_X = kde.kde_condentropy(activity2[:, FN, :], noise_variance)
+ 
+     # Compute conditional entropies of layer activity given output
+     hM_given_Y_upper = 0.
+     hM_given_Y_lower = 0.
+     for i in range(NUM_LABELS):
+-        hcond_upper = entropy_func_upper([activity4[labelixs[i], FN, :], ])
++        hcond_upper = entropy_func_upper([activity2[labelixs[i], FN, :], ])
+         hM_given_Y_upper += labelprobs[i] * hcond_upper
+-        hcond_lower = entropy_func_lower([activity4[labelixs[i], FN, :], ])
++        hcond_lower = entropy_func_lower([activity2[labelixs[i], FN, :], ])
+         hM_given_Y_lower += labelprobs[i] * hcond_lower
+     #upper
+     mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))
+Index: architectures_.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import torch\r\nimport torchaudio\r\nimport torch.nn as nn\r\n\r\n\r\nclass SimpleCNN(nn.Module):\r\n    def __init__(self, activation='ReLU', layers=4):\r\n        super().__init__()\r\n        self.name = 'SimpleCNN'\r\n        assert activation in ['ReLU', 'tanh'], \"Activation must be either 'ReLU' or 'tanh'\"\r\n\r\n        # Choose the activation function\r\n        if activation == 'ReLU':\r\n            self.activation = nn.ReLU\r\n        else:\r\n            self.activation = nn.Tanh\r\n\r\n        self.layers_number = layers\r\n        self.F1 = 4\r\n        self.F2 = 8\r\n        self.F3 = 8\r\n        self.F4 = 16\r\n        # First Convolution Block with Relu and Batch Norm. Use Kaiming Initialization\r\n        self.conv1 = nn.Conv2d(1, self.F1, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))\r\n        self.relu1 = self.activation()\r\n        self.bn1 = nn.BatchNorm2d(self.F1)\r\n\r\n        # Second Convolution Block\r\n        self.conv2 = nn.Conv2d(self.F1, self.F2, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.relu2 = self.activation ()\r\n        self.bn2 = nn.BatchNorm2d(self.F2)\r\n\r\n        # Third Convolution Block\r\n        self.conv3 = nn.Conv2d(self.F2, self.F3, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.relu3 = self.activation ()\r\n        self.bn3 = nn.BatchNorm2d(self.F3)\r\n\r\n        # Fourth Convolution Block\r\n        self.conv4 = nn.Conv2d(self.F3, self.F4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.relu4 = self.activation()\r\n        self.bn4 = nn.BatchNorm2d(self.F4)\r\n\r\n        # Linear Classifier\r\n        self.ap = nn.AdaptiveAvgPool2d(output_size=1)\r\n        self.lin = nn.Linear(in_features=self.F4, out_features=8)\r\n\r\n    def forward(self, x):\r\n        x = self.conv1(x)\r\n        x = self.relu1(x)\r\n        a1 = torch.flatten(x, 2, 3)\r\n        x = self.bn1(x)\r\n        x = self.conv2(x)\r\n        x = self.relu2(x)\r\n        a2 = torch.flatten(x, 2, 3)\r\n        x = self.bn2(x)\r\n        if self.layers_number == 4:\r\n            x = self.conv3(x)\r\n            x = self.relu3(x)\r\n            a3 = torch.flatten(x, 2, 3)\r\n            x = self.bn3(x)\r\n            x = self.conv4(x)\r\n            x = self.relu4(x)\r\n            a4 = torch.flatten(x, 2, 3)\r\n            x = self.bn4(x)\r\n\r\n        x = self.ap(x)\r\n        x = x.view(x.shape[0], -1)\r\n        x = self.lin(x)\r\n\r\n        if self.layers_number == 4:\r\n            return x, a1, a2, a3, a4\r\n        else:\r\n            return x, a1, a2\r\n\r\n\r\nclass Res2DBlock(nn.Module):\r\n    expansion = 1 #we don't use the block.expansion here\r\n\r\n    def __init__(self, inplanes, planes, stride=1,padding = 1):\r\n        super().__init__()\r\n        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size = 3, stride=stride,\r\n                     padding=padding, bias=False)\r\n        self.bn1 = nn.BatchNorm2d(planes)\r\n        self.relu = nn.ReLU(inplace=True)\r\n        self.conv2 = nn.Conv2d(planes, planes, kernel_size = 3, stride=1,\r\n                     padding=padding, bias=False)\r\n        self.bn2 = nn.BatchNorm2d(planes)\r\n        self.downsample = nn.Sequential(\r\n                nn.Conv2d(inplanes, planes, 1, stride, bias=False),\r\n                nn.BatchNorm2d(planes))\r\n        self.stride = stride\r\n\r\n    def forward(self, x):\r\n        identity = x\r\n        out = self.conv1(x)\r\n        out = self.relu(out)\r\n        out = self.conv2(out)\r\n        out = self.bn2(out)\r\n        identity = self.downsample(x)\r\n        out += identity\r\n        out = self.relu(out)\r\n        return out\r\n\r\n\r\nclass ResNet(nn.Module):\r\n\r\n    def __init__(self, FN=16, num_classes=8, p_dropout=None):\r\n        super().__init__()\r\n\r\n        self.FN = FN\r\n        if FN == 128:\r\n            self.name = 'ResNet34-XL'\r\n        elif FN == 64:\r\n            self.name = 'ResNet34-L'\r\n        elif FN == 32:\r\n            self.name = 'ResNet34-M'\r\n        elif FN == 16:\r\n            self.name = 'ResNet34-S'\r\n        else:\r\n            self.name = 'ResNet34'\r\n        layers = [3, 4, 6, 3]\r\n        self.c1 = nn.Conv2d(1, FN, kernel_size=7, stride=2, padding=3, bias=False)\r\n        self.bn1 = nn.BatchNorm2d(FN)\r\n        self.relu = nn.ReLU(inplace=True)\r\n        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)\r\n        self.layer1 = self._make_layer(FN, FN, layers[0])\r\n        self.layer2 = self._make_layer(FN, FN * 2, layers[1], stride=2)\r\n        self.avgpool = nn.AdaptiveAvgPool2d(7)\r\n        self.fc = nn.Linear(FN * 98, num_classes)\r\n        self.p_dropout = p_dropout\r\n        if p_dropout:\r\n            self.dropout = nn.Dropout(p=p_dropout)\r\n\r\n    def _make_layer(self, inplanes, planes, blocks, stride=1):\r\n        layers = []\r\n        layers.append(Res2DBlock(inplanes, planes, stride))\r\n\r\n        self.inplanes = planes\r\n\r\n        for _ in range(1, blocks):\r\n            layers.append(Res2DBlock(self.inplanes, planes))\r\n\r\n        return nn.Sequential(*layers)\r\n\r\n    def forward(self, x):\r\n        x = self.c1(x)\r\n        x = self.bn1(x)\r\n        x = self.relu(x)\r\n        x = self.maxpool(x)\r\n\r\n        x = self.layer1(x)\r\n        x = self.layer2(x)\r\n\r\n        x = self.avgpool(x)\r\n        x = torch.flatten(x, 1)\r\n        x = self.fc(x)\r\n        if self.p_dropout:\r\n            x = self.dropout(x)\r\n\r\n        return x\r\n\r\n\r\nclass SimpleCNN2(nn.Module):\r\n    def __init__(self, activation='ReLU'):\r\n        super().__init__()\r\n        self.name = 'SimpleCNN'\r\n        assert activation in ['ReLU', 'tanh'], \"Activation must be either 'ReLU' or 'tanh'\"\r\n\r\n        # Choose the activation function\r\n        if activation == 'ReLU':\r\n            self.activation = nn.ReLU\r\n        else:\r\n            self.activation = nn.Tanh\r\n\r\n        # First Convolution Block with Activation and Batch Norm. Use Kaiming Initialization\r\n        self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))\r\n        self.act1 = self.activation()\r\n        self.bn1 = nn.BatchNorm2d(4)\r\n\r\n        # Second Convolution Block\r\n        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act2 = self.activation()\r\n        self.bn2 = nn.BatchNorm2d(16)\r\n\r\n        # Third Convolution Block\r\n        self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act3 = self.activation()\r\n        self.bn3 = nn.BatchNorm2d(32)\r\n\r\n        # Fourth Convolution Block\r\n        self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act4 = self.activation()\r\n        self.bn4 = nn.BatchNorm2d(64)\r\n\r\n        # Linear Classifier\r\n        self.ap = nn.AdaptiveAvgPool2d(output_size=1)\r\n        self.lin = nn.Linear(in_features=64, out_features=8)\r\n\r\n    def forward(self, x):\r\n        x = self.conv1(x)\r\n        x = self.act1(x)\r\n        a1 = torch.flatten(x, 2, 3)\r\n        x = self.bn1(x)\r\n\r\n        x = self.conv2(x)\r\n        x = self.act2(x)\r\n        a2 = torch.flatten(x, 2, 3)\r\n        x = self.bn2(x)\r\n\r\n        x = self.conv3(x)\r\n        x = self.act3(x)\r\n        a3 = torch.flatten(x, 2, 3)\r\n        x = self.bn3(x)\r\n\r\n        x = self.conv4(x)\r\n        x = self.act4(x)\r\n        a4 = torch.flatten(x, 2, 3)\r\n        x = self.bn4(x)\r\n\r\n        x = self.ap(x)\r\n        x = x.view(x.shape[0], -1)\r\n        x = self.lin(x)\r\n        return x, a1, a2, a3, a4\r\nclass SimpleCNN2(nn.Module):\r\n    def __init__(self, activation='ReLU'):\r\n        super().__init__()\r\n        self.name = 'SimpleCNN'\r\n        assert activation in ['ReLU', 'tanh'], \"Activation must be either 'ReLU' or 'tanh'\"\r\n        \r\n        # Choose the activation function\r\n        if activation == 'ReLU':\r\n            self.activation = nn.ReLU\r\n        else:\r\n            self.activation = nn.Tanh\r\n        \r\n        # First Convolution Block with Activation and Batch Norm. Use Kaiming Initialization\r\n        self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))\r\n        self.act1 = self.activation()\r\n        self.bn1 = nn.BatchNorm2d(4)\r\n\r\n        # Second Convolution Block\r\n        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act2 = self.activation()\r\n        self.bn2 = nn.BatchNorm2d(16)\r\n        \r\n         # Third Convolution Block\r\n        self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act3 = self.activation()\r\n        self.bn3 = nn.BatchNorm2d(32)\r\n\r\n        # Fourth Convolution Block\r\n        self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\r\n        self.act4 = self.activation()\r\n        self.bn4 = nn.BatchNorm2d(64)\r\n\r\n        # Linear Classifier\r\n        self.ap = nn.AdaptiveAvgPool2d(output_size=1)\r\n        self.lin = nn.Linear(in_features=64, out_features=8)\r\n\r\n    def forward(self, x):\r\n        x = self.conv1(x)\r\n        x = self.act1(x)\r\n        a1 = torch.flatten(x, 2, 3)\r\n        x = self.bn1(x)\r\n        \r\n        x = self.conv2(x)\r\n        x = self.act2(x)\r\n        a2 = torch.flatten(x, 2, 3)\r\n        x = self.bn2(x)\r\n        \r\n        x = self.conv3(x)\r\n        x = self.act3(x)\r\n        a3 = torch.flatten(x, 2, 3)\r\n        x = self.bn3(x)\r\n        \r\n        x = self.conv4(x)\r\n        x = self.act4(x)\r\n        a4 = torch.flatten(x, 2, 3)\r\n        x = self.bn4(x)       \r\n        \r\n        x = self.ap(x)\r\n        x = x.view(x.shape[0], -1)\r\n        x = self.lin(x)\r\n        return x, a1, a2, a3, a4\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/architectures_.py b/architectures_.py
+--- a/architectures_.py	(revision 4db0bd8bc0811f27313ef65280b312340cb60fcc)
++++ b/architectures_.py	(date 1683043106248)
+@@ -4,7 +4,7 @@
+ 
+ 
+ class SimpleCNN(nn.Module):
+-    def __init__(self, activation='ReLU', layers=4):
++    def __init__(self, activation='ReLU', layers=2):
+         super().__init__()
+         self.name = 'SimpleCNN'
+         assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"
+@@ -221,64 +221,3 @@
+         x = x.view(x.shape[0], -1)
+         x = self.lin(x)
+         return x, a1, a2, a3, a4
+-class SimpleCNN2(nn.Module):
+-    def __init__(self, activation='ReLU'):
+-        super().__init__()
+-        self.name = 'SimpleCNN'
+-        assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"
+-        
+-        # Choose the activation function
+-        if activation == 'ReLU':
+-            self.activation = nn.ReLU
+-        else:
+-            self.activation = nn.Tanh
+-        
+-        # First Convolution Block with Activation and Batch Norm. Use Kaiming Initialization
+-        self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
+-        self.act1 = self.activation()
+-        self.bn1 = nn.BatchNorm2d(4)
+-
+-        # Second Convolution Block
+-        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+-        self.act2 = self.activation()
+-        self.bn2 = nn.BatchNorm2d(16)
+-        
+-         # Third Convolution Block
+-        self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+-        self.act3 = self.activation()
+-        self.bn3 = nn.BatchNorm2d(32)
+-
+-        # Fourth Convolution Block
+-        self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+-        self.act4 = self.activation()
+-        self.bn4 = nn.BatchNorm2d(64)
+-
+-        # Linear Classifier
+-        self.ap = nn.AdaptiveAvgPool2d(output_size=1)
+-        self.lin = nn.Linear(in_features=64, out_features=8)
+-
+-    def forward(self, x):
+-        x = self.conv1(x)
+-        x = self.act1(x)
+-        a1 = torch.flatten(x, 2, 3)
+-        x = self.bn1(x)
+-        
+-        x = self.conv2(x)
+-        x = self.act2(x)
+-        a2 = torch.flatten(x, 2, 3)
+-        x = self.bn2(x)
+-        
+-        x = self.conv3(x)
+-        x = self.act3(x)
+-        a3 = torch.flatten(x, 2, 3)
+-        x = self.bn3(x)
+-        
+-        x = self.conv4(x)
+-        x = self.act4(x)
+-        a4 = torch.flatten(x, 2, 3)
+-        x = self.bn4(x)       
+-        
+-        x = self.ap(x)
+-        x = x.view(x.shape[0], -1)
+-        x = self.lin(x)
+-        return x, a1, a2, a3, a4

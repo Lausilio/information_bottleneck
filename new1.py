@@ -6,6 +6,7 @@ import scipy.special as sp
 
 
 def get_dists_np(X):
+    X = X[0]
     x2 = (X**2).sum(axis=1)[:,None]
     dists = x2 + x2.T - 2*X.dot(X.T)
     return dists
@@ -23,14 +24,14 @@ def entropy_estimator_kl(x, var):
     if len(x) == 0:
         return [0]
     else:
-        N, dims = np.shape(x)
+        _, N, dims = np.shape(x)
         dists = get_dists_np(x)
 
         dists2 = dists / (2*var)
         normconst = (dims/2.0)*np.log(2*np.pi*var)
         lprobs = sp.logsumexp(-dists2, axis=1) - np.log(N) - normconst
         h = -np.mean(lprobs)
-        return [dims/2 + h,]
+        return dims/2 + h
 
 def entropy_estimator_bd(x, var):
     # Bhattacharyya-based lower bound on entropy of mixture of Gaussians with covariance matrix var * I
@@ -39,7 +40,7 @@ def entropy_estimator_bd(x, var):
     if len(x) == 0:
         return [0]
     else:
-        N, dims = np.shape(x)
+        _, N, dims = np.shape(x)
         val = entropy_estimator_kl(x,4*var)
         return val + np.log(0.25)*dims/2
 
