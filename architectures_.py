@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, activation='ReLU', layers=4):
+    def __init__(self, activation='tanh', layers=4):
         super().__init__()
         self.name = 'SimpleCNN'
         assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"

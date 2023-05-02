@@ -51,7 +51,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 200
+EPOCHS = 800
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -451,10 +451,10 @@ plt.savefig('mi_xy_u.pdf')
 plt.show()
 
 #plot MI bar UPPER
-plt.plot(epochs, h_array_a1_u, label='Entropy L1')
-plt.plot(epochs, h_array_a2_u, label='Entropy L2')
-plt.plot(epochs, h_array_a3_u, label='Entropy L3')
-plt.plot(epochs, h_array_a4_u, label='Entropy L4')
+plt.plot(epochs, h_array_a1_u / np.max(h_array_a1_u), label='Entropy L1')
+plt.plot(epochs, h_array_a2_u / np.max(h_array_a2_u), label='Entropy L2')
+plt.plot(epochs, h_array_a3_u / np.max(h_array_a3_u), label='Entropy L3')
+plt.plot(epochs, h_array_a4_u / np.max(h_array_a4_u), label='Entropy L4')
 
 plt.xlabel('Epochs')
 plt.ylabel('Entropy(T)')
@@ -481,10 +481,10 @@ plt.savefig('mi_xy_l.pdf')
 plt.show()
 
 #plot h bar LOWER
-plt.plot(epochs, h_array_a1_l, label='Entropy L1')
-plt.plot(epochs, h_array_a2_l, label='Entropy L2')
-plt.plot(epochs, h_array_a3_l, label='Entropy L3')
-plt.plot(epochs, h_array_a4_l, label='Entropy L4')
+plt.plot(epochs, h_array_a1_l / np.max(h_array_a1_l), label='Entropy L1')
+plt.plot(epochs, h_array_a2_l / np.max(h_array_a2_l), label='Entropy L2')
+plt.plot(epochs, h_array_a3_l / np.max(h_array_a3_l), label='Entropy L3')
+plt.plot(epochs, h_array_a4_l / np.max(h_array_a4_l), label='Entropy L4')
 
 plt.xlabel('Epochs')
 plt.ylabel('Entropy(T)')

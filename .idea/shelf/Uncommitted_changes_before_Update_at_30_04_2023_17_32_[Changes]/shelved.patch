@@ -1,0 +1,140 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nimport time\r\nfrom collections import defaultdict\r\n\r\nimport numpy as np\r\nimport pandas as pd\r\nimport matplotlib.pyplot as plt\r\nfrom sklearn.preprocessing import LabelBinarizer\r\n\r\nimport torch\r\nimport torchaudio\r\nimport torch.nn as nn\r\nfrom torch.utils.data import Dataset\r\nfrom torchsummary import summary\r\n\r\nfrom utils import load\r\nfrom dataloader import FMA2D_spec\r\nfrom architectures import SimpleCNN, ResNet\r\n#from architectures import SimpleCNN2, ResNet\r\nfrom simplebinmi import bin_calc_information2\r\n\r\n#import kde\r\nimport kde_torch as kde\r\n\r\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\r\n\r\nDATA_DIR = './data/fma_small'\r\n\r\n# download data first from these links:\r\n# curl -O https://os.unil.cloud.switch.ch/fma/fma_metadata.zip\r\n# curl -O https://os.unil.cloud.switch.ch/fma/fma_small.zip\r\n\r\ntracks = load('./data/fma_metadata/tracks.csv')\r\nsubset = tracks.index[tracks['set', 'subset'] <= 'small']\r\n\r\ntracks = tracks.loc[subset][:1000]\r\ntrain = tracks.index[tracks['set', 'split'] == 'training']\r\nval = tracks.index[tracks['set', 'split'] == 'validation']\r\ntest = tracks.index[tracks['set', 'split'] == 'test']\r\n\r\nlabels_onehot = LabelBinarizer().fit_transform(tracks['track', 'genre_top'])\r\nlabels_onehot = pd.DataFrame(labels_onehot, index=tracks.index)\r\n\r\n\r\nNUM_LABELS = 8\r\nlabelixs = {}\r\ny = np.argmax(labels_onehot.to_numpy(), axis=1)\r\nfor i in range(NUM_LABELS):\r\n    labelixs[i] = y == i\r\n\r\nlabelprobs = np.mean(y, axis=0)\r\n\r\nBATCH = 256\r\nEPOCHS = 100\r\naugment_prob = 0.8\r\nlabels_onehot_np = np.array(labels_onehot)\r\n\r\n# create a training dataset and dataloader\r\ndataset_train = FMA2D_spec(DATA_DIR, train, labels_onehot, transforms=False)\r\ndataloader = torch.utils.data.DataLoader(dataset_train, batch_size=BATCH, shuffle=True)\r\n\r\n# create a validation dataset and dataloader\r\ndataset_valid = FMA2D_spec(DATA_DIR, val, labels_onehot, transforms=False)\r\nval_dataloader = torch.utils.data.DataLoader(dataset_valid, batch_size=BATCH, shuffle=True)\r\n\r\n# define the loss function and the optimizer\r\nloss_fn = nn.CrossEntropyLoss()\r\n\r\n# Lee 2017\r\n# SGD optimizer\r\n#optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)\r\n#scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.2, patience=5)\r\n\r\nfrom utils import plot_spectrogram\r\nfor spec, label, ixs in dataloader:\r\n    #print(spec.size())\r\n    #print(len(label))\r\n    #print(ixs)\r\n    #plot_spectrogram(spec[0])\r\n    #print(spec.size(), ixs)\r\n    #plot_spectrogram(spec[0])\r\n    input_size = spec.size()[2]\r\n    break\r\n\r\n#plot MI I(X,T) for conv blocks\r\np_dropout = 0.3\r\n#model = ResNet(FN=64, p_dropout=p_dropout)\r\n#added a condition to allow to specify ReLU or tanh\r\nmodel = SimpleCNN(activation = \"tanh\")\r\n#model = SimpleCNN()\r\nmodel.to(device)\r\n\r\n#summary(model, (1, 128, 1290))\r\n\r\n#------------KDE functions\r\n#nats to bits conversion factor\r\nnats2bits = 1.0/np.log(2)\r\n#upper/lower entropy estimates\r\nnoise_variance = 1e-3  # Added Gaussian noise variance\r\nbinsize = 0.07  # size of bins for binning method\r\n\r\n# Functions to return upper and lower bounds on entropy of layer activity\r\n#Klayer_activity = K.placeholder(ndim=2)  # Keras placeholder\r\n#entropy_func_upper = torch.function([Klayer_activity,], [kde.entropy_estimator_kl(Klayer_activity, noise_variance),])\r\n#entropy_func_lower = torch.function([Klayer_activity,], [kde.entropy_estimator_bd(Klayer_activity, noise_variance),])\r\ndef entropy_func_upper(activity):\r\n    return kde.entropy_estimator_kl(activity, noise_variance)\r\ndef entropy_func_lower(activity):\r\n    return kde.entropy_estimator_bd(activity, noise_variance)\r\n#------------------------\r\n\r\n# Adam optimizer01\r\nlr = 0.01\r\noptimizer = torch.optim.Adam(model.parameters())\r\n\r\ntimestamp = time.strftime(\"apr%d_t%H%M\", time.gmtime())\r\nmodel_name = f\"{model.name}_B{BATCH}_E{EPOCHS}_LR{lr}_pD{p_dropout}_A{augment_prob}_{timestamp}\"\r\n\r\ni = 0\r\nrunning_loss = 0.0\r\nbest_val_loss = float('inf')  # initialize the best validation loss\r\n\r\n# train the model\r\nacc_tr = []\r\nacc_val = []\r\nloss_tr = []\r\nloss_val = []\r\n\r\nmi_array_a1 = []\r\nmi_array_a2 = []\r\nmi_array_a3 = []\r\nmi_array_a4 = []\r\n\r\nactivity = np.zeros((1000, 4, 10304))\r\nactivity2 = np.zeros((1000, 16, 2576))\r\nactivity3 = np.zeros((1000, 32, 648))\r\nactivity4 = np.zeros((1000, 64, 164))\r\n\r\nt0 = time.time()\r\nprev_a = 0\r\n\r\nfor epoch in range(EPOCHS):\r\n    # evaluate the model on the training dataset\r\n    train_correct = 0\r\n    train_total = 0\r\n    for spectrogram, label, ixs in dataloader:\r\n        model.train()\r\n        label = label.to(device)\r\n        train_label = torch.argmax(label, dim=1)\r\n\r\n        # forward pass\r\n        spectrogram = spectrogram.squeeze(0)\r\n        spectrogram = spectrogram.unsqueeze(1)\r\n\r\n        spectrogram = spectrogram.to(device)\r\n        #output, a1, a2 = model(spectrogram)\r\n        output, a1, a2, a3, a4 = model(spectrogram)\r\n        activity[ixs] = a1.cpu().detach().numpy()\r\n        activity2[ixs] = a2.cpu().detach().numpy()\r\n        activity3[ixs] = a3.cpu().detach().numpy()\r\n        activity4[ixs] = a4.cpu().detach().numpy()\r\n\r\n        loss = loss_fn(output, label)\r\n\r\n        #cepochdata = defaultdict(list)\r\n\r\n        # backward pass\r\n        optimizer.zero_grad()\r\n        model.zero_grad()\r\n        loss.backward()\r\n        optimizer.step()\r\n\r\n        # Update the learning rate\r\n        # scheduler.step(loss)\r\n\r\n        _, train_predicted = torch.max(output.data, 1)\r\n        train_total += train_label.size(0)\r\n        train_correct += (train_predicted == train_label).sum().item()\r\n        # print statistics\r\n        i += 1\r\n        running_loss += loss.item()\r\n\r\n    loss = running_loss / len(dataloader)\r\n    loss_tr.append(loss)\r\n    print('[%d, %5d subsamples] Training loss: %.3f' % (epoch + 1, i * BATCH, loss))\r\n    running_loss = 0\r\n    # evaluate the model on the validation dataset\r\n    val_loss = 0.0\r\n    val_correct = 0\r\n    val_total = 0\r\n    model.eval()\r\n    with torch.no_grad():\r\n        for val_spectrogram, val_label, ixs in val_dataloader:\r\n            val_label = val_label.to(device)\r\n            val_label = torch.argmax(val_label, dim=1)\r\n\r\n            val_spectrogram = val_spectrogram.squeeze(0)\r\n            val_spectrogram = val_spectrogram.unsqueeze(1)\r\n            val_spectrogram = val_spectrogram.to(device)\r\n            val_output, a1, a2, _, _ = model(val_spectrogram)\r\n            val_loss += loss_fn(val_output, val_label).item()\r\n            _, val_predicted = torch.max(val_output.data, 1)\r\n            val_total += val_label.size(0)\r\n            val_correct += (val_predicted == val_label).sum().item()\r\n\r\n    loss = val_loss / len(val_dataloader)\r\n    loss_val.append(loss)\r\n    val_acc = val_correct / val_total\r\n    tr_acc = train_correct / train_total\r\n    acc_tr.append(tr_acc)\r\n    acc_val.append(val_acc)\r\n    t1 = time.time()\r\n    t = (t1 - t0) / 60\r\n    # Save the model if the validation loss is the best seen so far\r\n    if loss < best_val_loss:\r\n        best_val_loss = loss\r\n        best_val_acc = val_acc\r\n        best_tr_acc = tr_acc\r\n        best_state_dict = model.state_dict()\r\n    print(\r\n        '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,\r\n                                                                                                                val_acc,\r\n                                                                                                                tr_acc))\r\n    #------KDE estimates\r\n    # Compute marginal entropies\r\n    h_upper = entropy_func_upper([activity, ])\r\n    h_lower = entropy_func_lower([activity, ])\r\n    # Layer activity given input. This is simply the entropy of the Gaussian noise\r\n    hM_given_X = kde.kde_condentropy(activity, noise_variance)\r\n\r\n    # Compute conditional entropies of layer activity given output\r\n    hM_given_Y_upper = 0.\r\n    hM_given_Y_lower = 0.\r\n    for i in range(NUM_LABELS):\r\n        hcond_upper = entropy_func_upper([activity[labelixs[i], :, :], ])[0]\r\n        hM_given_Y_upper += labelprobs[i] * hcond_upper\r\n        hcond_lower = entropy_func_lower([activity[:, labelixs[i], :, :], ])[0]\r\n        hM_given_Y_lower += labelprobs[i] * hcond_lower\r\n\r\n\r\n    mi_array_a1.append(mi_a1)\r\n    mi_array_a2.append(mi_a2)\r\n    mi_array_a3.append(mi_a3)\r\n    mi_array_a4.append(mi_a4)\r\n\r\nmi_array_a1 = np.array(mi_array_a1)\r\nmi_array_a2 = np.array(mi_array_a2)\r\nmi_array_a3 = np.array(mi_array_a3)\r\nmi_array_a4 = np.array(mi_array_a4)\r\n\r\nnp.save(timestamp + '_MI_a1', mi_array_a1)\r\nnp.save(timestamp + '_MI_a2', mi_array_a2)\r\nnp.save(timestamp + '_MI_a3', mi_array_a3)\r\nnp.save(timestamp + '_MI_a4', mi_array_a4)\r\n\r\nt = np.arange(len(mi_array_a1))\r\nplt.plot(t, mi_array_a1, label='MI Conv1')\r\nplt.plot(t, mi_array_a2, label='MI Conv2')\r\nplt.plot(t, mi_array_a3, label='MI Conv3')\r\nplt.plot(t, mi_array_a4, label='MI Conv4')\r\n\r\nplt.xlabel('Epochs')\r\nplt.ylabel('MI/Entropy(T)')\r\nplt.grid()\r\nplt.legend()\r\nplt.show()\r\n\r\nfig, axs = plt.subplots(2, 2, figsize=(10, 10))\r\nfig.suptitle('MI/Entropy(T) vs Epochs for Conv Blocks')\r\n\r\naxs[0, 0].plot(t, mi_array_a1, label='MI Conv1', color='blue')\r\naxs[0, 0].set_title('Conv1')\r\naxs[0, 0].grid()\r\naxs[0, 0].set(ylabel='MI/Entropy(T)')\r\n\r\naxs[0, 1].plot(t, mi_array_a2, label='MI Conv2', color='orange')\r\naxs[0, 1].set_title('Conv2')\r\naxs[0, 1].grid()\r\n\r\naxs[1, 0].plot(t, mi_array_a3, label='MI Conv3', color='green')\r\naxs[1, 0].set_title('Conv3')\r\naxs[1, 0].grid()\r\naxs[1, 0].set(xlabel='Epochs', ylabel='MI/Entropy(T)')\r\n\r\naxs[1, 1].plot(t, mi_array_a4, label='MI Conv4', color='red')\r\naxs[1, 1].set_title('Conv4')\r\naxs[1, 1].grid()\r\naxs[1, 1].set(xlabel='Epochs')\r\n\r\nplt.show()\r\n\r\ntorch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')\r\nprint('Finished Training')\r\n\r\n\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision 2f00dfa24f92a0c083cf01070f45b0275db2dfcd)
++++ b/main.py	(date 1682867981060)
+@@ -16,7 +16,7 @@
+ from utils import load
+ from dataloader import FMA2D_spec
+ from architectures import SimpleCNN, ResNet
+-#from architectures import SimpleCNN2, ResNet
++from architectures import SimpleCNN2, ResNet
+ from simplebinmi import bin_calc_information2
+ 
+ #import kde
+@@ -86,7 +86,7 @@
+ p_dropout = 0.3
+ #model = ResNet(FN=64, p_dropout=p_dropout)
+ #added a condition to allow to specify ReLU or tanh
+-model = SimpleCNN(activation = "tanh")
++model = SimpleCNN2(activation = "tanh")
+ #model = SimpleCNN()
+ model.to(device)
+ 
+@@ -126,16 +126,14 @@
+ loss_tr = []
+ loss_val = []
+ 
+-mi_array_a1 = []
+-mi_array_a2 = []
+-mi_array_a3 = []
+-mi_array_a4 = []
+ 
+-activity = np.zeros((1000, 4, 10304))
++activity1 = np.zeros((1000, 4, 10304))
+ activity2 = np.zeros((1000, 16, 2576))
+ activity3 = np.zeros((1000, 32, 648))
+ activity4 = np.zeros((1000, 64, 164))
+ 
++activaties = [activity1, activity2, activity3, activity4]
++
+ t0 = time.time()
+ prev_a = 0
+ 
+@@ -155,7 +153,7 @@
+         spectrogram = spectrogram.to(device)
+         #output, a1, a2 = model(spectrogram)
+         output, a1, a2, a3, a4 = model(spectrogram)
+-        activity[ixs] = a1.cpu().detach().numpy()
++        activity1[ixs] = a1.cpu().detach().numpy()
+         activity2[ixs] = a2.cpu().detach().numpy()
+         activity3[ixs] = a3.cpu().detach().numpy()
+         activity4[ixs] = a4.cpu().detach().numpy()
+@@ -221,76 +219,25 @@
+         '[{:.4f} min] Validation Loss: {:.4f} | Validation Accuracy: {:.4f} | Training Accuracy: {:.4f}'.format(t, loss,
+                                                                                                                 val_acc,
+                                                                                                                 tr_acc))
+-    #------KDE estimates
++    #------KDE estimates first layer
+     # Compute marginal entropies
+-    h_upper = entropy_func_upper([activity, ])
+-    h_lower = entropy_func_lower([activity, ])
++    h_upper = entropy_func_upper([activity1[:, 0, :], ])
++    h_lower = entropy_func_lower([activity1[:, 0, :], ])
+     # Layer activity given input. This is simply the entropy of the Gaussian noise
+-    hM_given_X = kde.kde_condentropy(activity, noise_variance)
++    hM_given_X = kde.kde_condentropy(activity1, noise_variance)
+ 
+     # Compute conditional entropies of layer activity given output
+     hM_given_Y_upper = 0.
+     hM_given_Y_lower = 0.
+     for i in range(NUM_LABELS):
+-        hcond_upper = entropy_func_upper([activity[labelixs[i], :, :], ])[0]
++        hcond_upper = entropy_func_upper([activity1[:, labelixs[i], :], ])
+         hM_given_Y_upper += labelprobs[i] * hcond_upper
+-        hcond_lower = entropy_func_lower([activity[:, labelixs[i], :, :], ])[0]
++        hcond_lower = entropy_func_lower([activity1[:, labelixs[i], :], ])
+         hM_given_Y_lower += labelprobs[i] * hcond_lower
+ 
+ 
+-    mi_array_a1.append(mi_a1)
+-    mi_array_a2.append(mi_a2)
+-    mi_array_a3.append(mi_a3)
+-    mi_array_a4.append(mi_a4)
+-
+-mi_array_a1 = np.array(mi_array_a1)
+-mi_array_a2 = np.array(mi_array_a2)
+-mi_array_a3 = np.array(mi_array_a3)
+-mi_array_a4 = np.array(mi_array_a4)
+ 
+-np.save(timestamp + '_MI_a1', mi_array_a1)
+-np.save(timestamp + '_MI_a2', mi_array_a2)
+-np.save(timestamp + '_MI_a3', mi_array_a3)
+-np.save(timestamp + '_MI_a4', mi_array_a4)
+ 
+-t = np.arange(len(mi_array_a1))
+-plt.plot(t, mi_array_a1, label='MI Conv1')
+-plt.plot(t, mi_array_a2, label='MI Conv2')
+-plt.plot(t, mi_array_a3, label='MI Conv3')
+-plt.plot(t, mi_array_a4, label='MI Conv4')
+-
+-plt.xlabel('Epochs')
+-plt.ylabel('MI/Entropy(T)')
+-plt.grid()
+-plt.legend()
+-plt.show()
+-
+-fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+-fig.suptitle('MI/Entropy(T) vs Epochs for Conv Blocks')
+-
+-axs[0, 0].plot(t, mi_array_a1, label='MI Conv1', color='blue')
+-axs[0, 0].set_title('Conv1')
+-axs[0, 0].grid()
+-axs[0, 0].set(ylabel='MI/Entropy(T)')
+-
+-axs[0, 1].plot(t, mi_array_a2, label='MI Conv2', color='orange')
+-axs[0, 1].set_title('Conv2')
+-axs[0, 1].grid()
+-
+-axs[1, 0].plot(t, mi_array_a3, label='MI Conv3', color='green')
+-axs[1, 0].set_title('Conv3')
+-axs[1, 0].grid()
+-axs[1, 0].set(xlabel='Epochs', ylabel='MI/Entropy(T)')
+-
+-axs[1, 1].plot(t, mi_array_a4, label='MI Conv4', color='red')
+-axs[1, 1].set_title('Conv4')
+-axs[1, 1].grid()
+-axs[1, 1].set(xlabel='Epochs')
+-
+-plt.show()
+-
+-torch.save(best_state_dict, model_name + f'_VAL{best_val_acc}_TRAIN{best_tr_acc}.pt')
+-print('Finished Training')
+ 
+ 
+ 
