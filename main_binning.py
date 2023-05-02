@@ -10,7 +10,7 @@ import torch
 import torchaudio
 import torch.nn as nn
 from torch.utils.data import Dataset
-from torchsummary import summary
+#from torchsummary import summary
 
 from utils import load
 from dataloader import FMA2D_spec
@@ -19,7 +19,7 @@ from simplebinmi import bin_calc_information2
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+print(device)
 DATA_DIR = './data/fma_small'
 
 # download data first from these links:
@@ -46,7 +46,7 @@ for i in range(NUM_LABELS):
 
 
 BATCH = 256
-EPOCHS = 100
+EPOCHS = 200
 augment_prob = 0.8
 
 
@@ -68,7 +68,7 @@ loss_fn = nn.CrossEntropyLoss()
 
 from utils import plot_spectrogram
 for spec, label, ixs in dataloader:
-    print(spec.size(), ixs)
+    #print(spec.size(), ixs)
     #plot_spectrogram(spec[0])
     input_size = spec.size()[2]
     break
@@ -201,10 +201,10 @@ mi2_array = np.array(mi2_array)
 mi3_array = np.array(mi3_array)
 mi4_array = np.array(mi4_array)
 np.save(timestamp, mi_array)
-np.save(timestamp + 'con1_0', mi_array)
-np.save(timestamp + 'con1_4', mi2_array)
-np.save(timestamp + 'con2_0', mi3_array)
-np.save(timestamp + 'con2_4', mi4_array)
+np.save(timestamp + 'tanh_1.2_0', mi_array)
+np.save(timestamp + 'tanh_1.2_4', mi2_array)
+np.save(timestamp + 'tanh_2.2_0', mi3_array)
+np.save(timestamp + 'tanh_2.2_16', mi4_array)
 
 plt.plot(loss_val, label='Validation loss')
 plt.plot(loss_tr, label='Training loss')

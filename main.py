@@ -16,7 +16,6 @@ from torchsummary import summary
 from utils import load
 from dataloader import FMA2D_spec
 from architectures import SimpleCNN, ResNet, SimpleCNN2
-from architectures import SimpleCNN2, ResNet
 from simplebinmi import bin_calc_information2
 
 #import kde
@@ -51,7 +50,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 5
+EPOCHS = 100
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -218,6 +217,10 @@ for epoch in range(EPOCHS):
             val_spectrogram = val_spectrogram.unsqueeze(1)
             val_spectrogram = val_spectrogram.to(device)
             val_output, a1, a2, a3, a4 = model(val_spectrogram)
+            activity1[ixs] = a1.cpu().detach().numpy()
+            activity2[ixs] = a2.cpu().detach().numpy()
+            activity3[ixs] = a3.cpu().detach().numpy()
+            activity4[ixs] = a4.cpu().detach().numpy()
             val_loss += loss_fn(val_output, val_label).item()
             _, val_predicted = torch.max(val_output.data, 1)
             val_total += val_label.size(0)
@@ -260,12 +263,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a1_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a1_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a1_u.append(nats2bits * h_upper/10304)
+    h_array_a1_u.append(nats2bits * h_upper * (1/10304))
 
     #lower
     mix_array_a1_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a1_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a1_l.append(nats2bits * h_lower/10304)
+    h_array_a1_l.append(nats2bits * h_lower * (1/10304))
 
     #------KDE estimates 2
     # Compute marginal entropies
@@ -286,12 +289,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a2_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a2_u.append(nats2bits * h_upper/2576)
+    h_array_a2_u.append(nats2bits * h_upper * (1/2576))
 
     #lower
     mix_array_a2_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a2_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a2_l.append(nats2bits * h_lower/2576)
+    h_array_a2_l.append(nats2bits * h_lower * (1/2576))
 
     #------KDE estimates 3
     # Compute marginal entropies
@@ -312,12 +315,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a3_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a3_u.append(nats2bits * /648)
+    h_array_a3_u.append(nats2bits * h_upper * (1/648))
 
     #lower
     mix_array_a3_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a3_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a3_l.append(nats2bits * h_lower/648)
+    h_array_a3_l.append(nats2bits * h_lower * (1/648))
 
     #------KDE estimates 4
     # Compute marginal entropies
@@ -338,12 +341,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a4_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a4_u.append(nats2bits * h_upper/164)
+    h_array_a4_u.append(nats2bits * h_upper * (1/164))
 
     #lower
     mix_array_a4_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a4_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a4_l.append(nats2bits * h_lower/164)
+    h_array_a4_l.append(nats2bits * h_lower * (1/164))
 
 mix_array_a1_u = np.array(mix_array_a1_u)
 miy_array_a1_u = np.array(miy_array_a1_u)
@@ -439,7 +442,7 @@ plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mu
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
-plt.legend()
+#plt.legend()
 plt.colorbar()
 plt.savefig('mi_xy_u.pdf')
 plt.show()
@@ -469,7 +472,7 @@ plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mu
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
-plt.legend()
+#plt.legend()
 plt.colorbar()
 plt.savefig('mi_xy_l.pdf')
 plt.show()
@@ -488,6 +491,8 @@ plt.savefig('h_l_epo.pdf')
 plt.show()
 #-------------------------------------------------------------------
 #plot u/l MI vs epochs
+#h = [nats2bits * np.log(10304) / np.log(8)] * len(epochs)
+#plt.plot(epochs, h, linestyle='dashed')#upper bound on the mutual information
 plt.plot(epochs, mix_array_a1_u, label='Upper Entropy')
 plt.plot(epochs, mix_array_a1_l, label='Lower Entropy')
 plt.xlabel('Epochs')
@@ -498,6 +503,8 @@ plt.legend()
 plt.savefig('mi_1_ul_epo.pdf')
 plt.show()
 
+#h = [nats2bits * np.log(2576) / np.log(8)] * len(epochs)
+#plt.plot(epochs, h, linestyle='dashed')
 plt.plot(epochs, mix_array_a2_u, label='Upper Entropy')
 plt.plot(epochs, mix_array_a2_l, label='Lower Entropy')
 plt.xlabel('Epochs')
@@ -508,6 +515,8 @@ plt.legend()
 plt.savefig('mi_2_ul_epo.pdf')
 plt.show()
 
+#h = [nats2bits * np.log(648) / np.log(8)] * len(epochs)
+#plt.plot(epochs, h, linestyle='dashed')
 plt.plot(epochs, mix_array_a3_u, label='Upper Entropy')
 plt.plot(epochs, mix_array_a3_l, label='Lower Entropy')
 plt.xlabel('Epochs')
@@ -518,6 +527,8 @@ plt.legend()
 plt.savefig('mi_3_ul_epo.pdf')
 plt.show()
 
+#h = [nats2bits * np.log(164) / np.log(8)] * len(epochs)
+#plt.plot(epochs, h, linestyle='dashed')
 plt.plot(epochs, mix_array_a4_u, label='Upper Entropy')
 plt.plot(epochs, mix_array_a4_l, label='Lower Entropy')
 plt.xlabel('Epochs')
