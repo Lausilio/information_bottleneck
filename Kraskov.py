@@ -12,12 +12,8 @@ def kraskov_entropy(T, k=2):
 
     # Calculate r_i as the distance to the k-th nearest neighbor
     r = distances[:, k]
-    a = 0
-    for i in r:
-        a += np.log(i + 1e-16)/np.log(2)
-    a = a*(d/n_samples)
     
     # Compute the entropy using Kraskov's formula
-    entropy = (a + d/2*np.log(np.pi)/np.log(2) - scipy.special.gammaln(d/2 + 1)/np.log(2) + scipy.special.psi(n_samples) - scipy.special.psi(k))
+    entropy = ( (np.sum(np.log(r + 1e-16))/np.log(2))*(d/n_samples) + d/2*np.log(np.pi)/np.log(2) - scipy.special.gammaln(d/2 + 1)/np.log(2) + scipy.special.psi(n_samples) - scipy.special.psi(k) )
     
     return entropy
