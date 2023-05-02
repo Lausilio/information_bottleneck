@@ -14,7 +14,7 @@ from torchsummary import summary
 
 from utils import load
 from dataloader import FMA2D_spec
-from architectures import SimpleCNN, ResNet
+from architectures_ import SimpleCNN, ResNet
 from simplebinmi import bin_calc_information2
 
 
@@ -46,7 +46,7 @@ for i in range(NUM_LABELS):
 
 
 BATCH = 256
-EPOCHS = 1000
+EPOCHS = 5
 
 
 # create a training dataset and dataloader
@@ -70,9 +70,10 @@ for spec, label, ixs in dataloader:
     input_size = spec.size()[2]
     break
 
+ACTIV_FUNC = 'tanh'
 p_dropout = 0.3
 #model = ResNet(FN=64, p_dropout=p_dropout)
-model = SimpleCNN()
+model = SimpleCNN(activation='tanh')
 model.to(device)
 
 
@@ -82,7 +83,7 @@ model.to(device)
 lr = 0.01
 optimizer = torch.optim.Adam(model.parameters())
 BINSIZE = 0.05
-ACTIV_FUNC = 'relu'
+
 timestamp = time.strftime("apr%d_t%H%M", time.gmtime())
 
 model_name = f"{model.name}_{ACTIV_FUNC}_L{model.layers_number}_B{BATCH}_E{EPOCHS}_LR{lr}_BINSIZE{BINSIZE}_{timestamp}"
