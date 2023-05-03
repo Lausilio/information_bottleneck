@@ -68,7 +68,6 @@ loss_fn = nn.CrossEntropyLoss()
 
 # Lee 2017
 # SGD optimizer
-#optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)
 #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.2, patience=5)
 
 from utils import plot_spectrogram
@@ -109,7 +108,8 @@ def entropy_func_lower(activity):
 
 # Adam optimizer01
 lr = 0.01
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)
+#optimizer = torch.optim.Adam(model.parameters())
 
 timestamp = time.strftime("apr%d_t%H%M", time.gmtime())
 model_name = f"{model.name}_B{BATCH}_E{EPOCHS}_LR{lr}_pD{p_dropout}_A{augment_prob}_{timestamp}"
