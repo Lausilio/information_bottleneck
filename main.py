@@ -51,7 +51,7 @@ for i in range(NUM_LABELS):
 labelprobs = np.mean(labels_onehot, axis=0)
 
 BATCH = 256
-EPOCHS = 400
+EPOCHS = 50
 augment_prob = 0.8
 labels_onehot_np = np.array(labels_onehot)
 
@@ -96,7 +96,7 @@ model.to(device)
 #nats to bits conversion factor
 nats2bits = 1.0/np.log(2)
 #upper/lower entropy estimates
-noise_variance = 1e-3  # Added Gaussian noise variance
+noise_variance = 1e-1  # Added Gaussian noise variance
 binsize = 0.07  # size of bins for binning method
 
 # Functions to return upper and lower bounds on entropy of layer activity
@@ -266,12 +266,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a1_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a1_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a1_u.append(nats2bits * h_upper)# * (1/10304))
+    h_array_a1_u.append(nats2bits * h_upper * (1/10304))
 
     #lower
     mix_array_a1_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a1_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a1_l.append(nats2bits * h_lower)# * (1/10304))
+    h_array_a1_l.append(nats2bits * h_lower * (1/10304))
 
     #------KDE estimates 2
     # Compute marginal entropies
@@ -292,12 +292,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a2_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a2_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a2_u.append(nats2bits * h_upper)# * (1/2576))
+    h_array_a2_u.append(nats2bits * h_upper * (1/2576))
 
     #lower
     mix_array_a2_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a2_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a2_l.append(nats2bits * h_lower)# * (1/2576))
+    h_array_a2_l.append(nats2bits * h_lower * (1/2576))
 
     #------KDE estimates 3
     # Compute marginal entropies
@@ -318,12 +318,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a3_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a3_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a3_u.append(nats2bits * h_upper)# * (1/648))
+    h_array_a3_u.append(nats2bits * h_upper * (1/648))
 
     #lower
     mix_array_a3_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a3_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a3_l.append(nats2bits * h_lower)# * (1/648))
+    h_array_a3_l.append(nats2bits * h_lower * (1/648))
 
     #------KDE estimates 4
     # Compute marginal entropies
@@ -344,12 +344,12 @@ for epoch in range(EPOCHS):
     #upper
     mix_array_a4_u.append(nats2bits * (h_upper - hM_given_X))
     miy_array_a4_u.append(nats2bits * (h_upper - hM_given_Y_upper))
-    h_array_a4_u.append(nats2bits * h_upper)# * (1/164))
+    h_array_a4_u.append(nats2bits * h_upper * (1/164))
 
     #lower
     mix_array_a4_l.append(nats2bits * (h_lower - hM_given_X))
     miy_array_a4_l.append(nats2bits * (h_lower - hM_given_Y_lower))
-    h_array_a4_l.append(nats2bits * h_lower)# * (1/164))
+    h_array_a4_l.append(nats2bits * h_lower * (1/164))
 
 mix_array_a1_u = np.array(mix_array_a1_u)
 miy_array_a1_u = np.array(miy_array_a1_u)
@@ -434,14 +434,14 @@ plt.savefig('loss_acc.pdf')
 #plot scatter UPPER
 epochs = list(range(EPOCHS))
 t = np.arange(len(mix_array_a1_u[:]))
-plt.plot(mix_array_a1_u[:], miy_array_a1_u[:], alpha=0.1, zorder=1)
+#plt.plot(mix_array_a1_u[:], miy_array_a1_u[:], alpha=0.1, zorder=1)
 plt.scatter(mix_array_a1_u[:], miy_array_a1_u[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
-plt.plot(mix_array_a2_u[:], miy_array_a2_u[:], alpha=0.1, zorder=1)
+#plt.plot(mix_array_a2_u[:], miy_array_a2_u[:], alpha=0.1, zorder=1)
 plt.scatter(mix_array_a2_u[:], miy_array_a2_u[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
 #plt.plot(mix_array_a3_u[:], miy_array_a3_u[:], alpha=0.1, zorder=1)
-#plt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.scatter(mix_array_a3_u[:], miy_array_a3_u[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
 #plt.plot(mix_array_a4_u[:], miy_array_a4_u[:], alpha=0.1, zorder=1)
-#plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+plt.scatter(mix_array_a4_u[:], miy_array_a4_u[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
@@ -464,14 +464,14 @@ plt.savefig('h_u_epo.pdf')
 plt.show()
 
 #plot scatter LOWER
-plt.plot(mix_array_a1_l[:], miy_array_a1_l[:], alpha=0.1, zorder=1)
+#plt.plot(mix_array_a1_l[:], miy_array_a1_l[:], alpha=0.1, zorder=1)
 plt.scatter(mix_array_a1_l[:], miy_array_a1_l[:], c=t, cmap='inferno', label='Mutual Information Conv L1', zorder=2)
-plt.plot(mix_array_a2_l[:], miy_array_a2_l[:], alpha=0.1, zorder=1)
+#plt.plot(mix_array_a2_l[:], miy_array_a2_l[:], alpha=0.1, zorder=1)
 plt.scatter(mix_array_a2_l[:], miy_array_a2_l[:], c=t, cmap='inferno', label='Mutual Information Conv L2', zorder=2)
 #plt.plot(mix_array_a3_l[:], miy_array_a3_l[:], alpha=0.1, zorder=1)
-#plt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
+plt.scatter(mix_array_a3_l[:], miy_array_a3_l[:], c=t, cmap='inferno', label='Mutual Information Conv L3', zorder=2)
 #plt.plot(mix_array_a4_l[:], miy_array_a4_l[:], alpha=0.1, zorder=1)
-#plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
+plt.scatter(mix_array_a4_l[:], miy_array_a4_l[:], c=t, cmap='inferno', label='Mutual Information Conv L4', zorder=2)
 plt.xlabel('I(X,T)')
 plt.ylabel('I(Y,T)')
 plt.grid()
