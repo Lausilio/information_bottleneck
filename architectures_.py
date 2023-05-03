@@ -165,58 +165,58 @@ class SimpleCNN2(nn.Module):
         super().__init__()
         self.name = 'SimpleCNN'
         assert activation in ['ReLU', 'tanh'], "Activation must be either 'ReLU' or 'tanh'"
-
+        
         # Choose the activation function
         if activation == 'ReLU':
             self.activation = nn.ReLU
         else:
             self.activation = nn.Tanh
-
+        
         # First Convolution Block with Activation and Batch Norm. Use Kaiming Initialization
         self.conv1 = nn.Conv2d(1, 4, kernel_size=(8, 8), stride=(4, 4), padding=(2, 2))
         self.act1 = self.activation()
         self.bn1 = nn.BatchNorm2d(4)
 
         # Second Convolution Block
-        self.conv2 = nn.Conv2d(4, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv2 = nn.Conv2d(4, 8, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.act2 = self.activation()
-        self.bn2 = nn.BatchNorm2d(16)
-
-        # Third Convolution Block
-        self.conv3 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.bn2 = nn.BatchNorm2d(8)
+        
+         # Third Convolution Block
+        self.conv3 = nn.Conv2d(8, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.act3 = self.activation()
-        self.bn3 = nn.BatchNorm2d(32)
+        self.bn3 = nn.BatchNorm2d(16)
 
         # Fourth Convolution Block
-        self.conv4 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.conv4 = nn.Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
         self.act4 = self.activation()
-        self.bn4 = nn.BatchNorm2d(64)
+        self.bn4 = nn.BatchNorm2d(32)
 
         # Linear Classifier
         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
-        self.lin = nn.Linear(in_features=64, out_features=8)
+        self.lin = nn.Linear(in_features=32, out_features=8)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.act1(x)
         a1 = torch.flatten(x, 2, 3)
         x = self.bn1(x)
-
+        
         x = self.conv2(x)
         x = self.act2(x)
         a2 = torch.flatten(x, 2, 3)
         x = self.bn2(x)
-
+        
         x = self.conv3(x)
         x = self.act3(x)
         a3 = torch.flatten(x, 2, 3)
         x = self.bn3(x)
-
+        
         x = self.conv4(x)
         x = self.act4(x)
         a4 = torch.flatten(x, 2, 3)
-        x = self.bn4(x)
-
+        x = self.bn4(x)       
+        
         x = self.ap(x)
         x = x.view(x.shape[0], -1)
         x = self.lin(x)
