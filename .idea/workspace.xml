@@ -5,25 +5,58 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73335423-9b41-49ae-bda7-7ed44b477273" name="Changes" comment="kde changes on main">
-      <change afterPath="$PROJECT_DIR$/tanh200new/h_u_epo.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/loss_acc.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_1_ul_epo.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_2_ul_epo.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_3_ul_epo.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_4_ul_epo.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_xy_l.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tanh200new/mi_xy_u.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/architectures_.py" beforeDir="false" afterPath="$PROJECT_DIR$/architectures_.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlh_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlh_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlh_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlh_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlx_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlx_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlx_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIlx_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIly_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIly_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIly_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIly_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuh_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuh_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuh_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuh_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIux_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIux_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIux_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIux_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuy_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuy_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuy_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr02_t2044_MIuy_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlh_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlh_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlh_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlh_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlx_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlx_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlx_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIlx_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIly_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIly_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIly_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIly_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuh_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuh_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuh_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuh_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIux_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIux_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIux_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIux_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuy_a1.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuy_a2.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuy_a3.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/apr03_t0539_MIuy_a4.npy" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/plot_mikde.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MI_DATA_ResNet.npy" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/h_l_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/h_l_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/h_u_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/h_u_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/loss_acc.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/loss_acc.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_1_ul_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_1_ul_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_2_ul_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_2_ul_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_3_ul_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_3_ul_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_4_ul_epo.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_4_ul_epo.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_xy_l.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_xy_l.pdf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tanh200/mi_xy_u.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/tanh200/mi_xy_u.pdf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,6 +125,8 @@
       <recent name="C:\Users\Utente\PycharmProjects\information_bottleneck\relu200new" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Utente\PycharmProjects\information_bottleneck\relu400_new" />
+      <recent name="C:\Users\Utente\PycharmProjects\information_bottleneck\relu800new" />
       <recent name="C:\Users\Utente\PycharmProjects\information_bottleneck\tanh200new" />
       <recent name="C:\Users\Utente\PycharmProjects\information_bottleneck\relu200new" />
     </key>
@@ -107,7 +142,7 @@
       <workItem from="1682866252107" duration="182000" />
       <workItem from="1682867879278" duration="20601000" />
       <workItem from="1682923910096" duration="21477000" />
-      <workItem from="1683030298379" duration="16445000" />
+      <workItem from="1683030298379" duration="27314000" />
     </task>
     <task id="LOCAL-00001" summary="kde changes on main">
       <created>1682663735924</created>
@@ -186,7 +221,21 @@
       <option name="project" value="LOCAL" />
       <updated>1683050967677</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="kde changes on main">
+      <created>1683060485412</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1683060485413</updated>
+    </task>
+    <task id="LOCAL-00013" summary="kde changes on main">
+      <created>1683091345640</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1683091345640</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
