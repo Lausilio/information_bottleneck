@@ -13,3 +13,5 @@ To achieve this, we compute the mutual information between the input and interna
 3. Kraskov method
 
 By comparing the results obtained from these methods, we provide a comprehensive analysis of the information bottleneck theory for CNNs.
+
+To see our presentation click [here](https://github.com/Lausilio/information_bottleneck/blob/master/Information%20theory.pdf)
